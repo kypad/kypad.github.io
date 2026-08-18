@@ -1,0 +1,2197 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, viewport-fit=cover"
+>
+
+<meta name="theme-color" content="#f7f7f8">
+
+<title>Shared Clipboard</title>
+
+
+<style>
+
+
+:root {
+
+  --primary: #ff6b00;
+  --primary-hover: #e95f00;
+  --primary-soft: rgba(255, 107, 0, 0.10);
+
+  --background: #f5f6f8;
+  --surface: #ffffff;
+
+  --text: #171717;
+  --text-secondary: #6b7280;
+
+  --border: #e5e7eb;
+
+  --shadow-small:
+    0 2px 8px rgba(0,0,0,.04);
+
+  --shadow-medium:
+    0 8px 25px rgba(0,0,0,.06);
+
+  --shadow-large:
+    0 20px 60px rgba(0,0,0,.09);
+
+}
+
+
+
+
+* {
+  box-sizing: border-box;
+}
+
+
+html,
+body {
+
+  margin: 0;
+
+  width: 100%;
+  height: 100%;
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+
+  background: var(--background);
+
+  color: var(--text);
+
+}
+
+
+button,
+input,
+textarea {
+
+  font-family: inherit;
+
+}
+
+
+
+#keyScreen {
+
+  position: relative;
+
+  width: 100%;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  overflow: hidden;
+
+  background:
+
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(255,107,0,.08),
+      transparent 30%
+    ),
+
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(255,150,50,.06),
+      transparent 35%
+    ),
+
+    #f7f7f8;
+
+}
+
+
+/* Background grid */
+
+#keyScreen::before {
+
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  background-image:
+
+    linear-gradient(
+      rgba(0,0,0,.025) 1px,
+      transparent 1px
+    ),
+
+    linear-gradient(
+      90deg,
+      rgba(0,0,0,.025) 1px,
+      transparent 1px
+    );
+
+  background-size: 35px 35px;
+
+  pointer-events: none;
+
+}
+
+
+
+
+.key-card {
+
+  position: relative;
+
+  z-index: 2;
+
+  width: 100%;
+
+  max-width: 460px;
+
+  padding: 42px;
+
+  background:
+    rgba(255,255,255,.95);
+
+  border:
+    1px solid rgba(0,0,0,.06);
+
+  border-radius: 18px;
+
+  box-shadow:
+    var(--shadow-large);
+
+  backdrop-filter:
+    blur(12px);
+
+  -webkit-backdrop-filter:
+    blur(12px);
+
+  animation:
+    cardEnter .45s ease;
+
+}
+
+
+@keyframes cardEnter {
+
+  from {
+
+    opacity: 0;
+
+    transform:
+      translateY(12px);
+
+  }
+
+  to {
+
+    opacity: 1;
+
+    transform:
+      translateY(0);
+
+  }
+
+}
+
+
+/* Orange accent */
+
+.key-card::before {
+
+  content: "";
+
+  display: block;
+
+  width: 44px;
+
+  height: 5px;
+
+  margin-bottom: 25px;
+
+  background:
+    var(--primary);
+
+  border-radius: 10px;
+
+}
+
+
+
+.key-card h1 {
+
+  margin:
+    0 0 10px;
+
+  font-size:
+    clamp(24px, 4vw, 30px);
+
+  font-weight: 700;
+
+  letter-spacing: -.7px;
+
+}
+
+
+.key-card p {
+
+  margin:
+    0 0 28px;
+
+  color:
+    var(--text-secondary);
+
+  font-size: 14px;
+
+  line-height: 1.6;
+
+}
+
+
+
+.key-input-row {
+
+  width: 100%;
+
+  display: flex;
+
+  gap: 10px;
+
+}
+
+
+
+#keyInput {
+
+  display: block;
+
+  flex: 1;
+
+  width: 100%;
+
+  min-width: 0;
+
+  height: 50px;
+
+  min-height: 50px;
+
+  padding:
+    0 16px;
+
+  border:
+    1px solid #d9dce1;
+
+  border-radius: 9px;
+
+  background:
+    #ffffff;
+
+  color:
+    var(--text);
+
+  font-size: 15px;
+
+  line-height: normal;
+
+  outline: none;
+
+  appearance: none;
+
+  -webkit-appearance: none;
+
+  transition:
+
+    border-color .2s ease,
+    box-shadow .2s ease;
+
+}
+
+
+#keyInput::placeholder {
+
+  color:
+    #aaaeb5;
+
+}
+
+
+#keyInput:hover {
+
+  border-color:
+    #c5c8cd;
+
+}
+
+
+#keyInput:focus {
+
+  border-color:
+    var(--primary);
+
+  box-shadow:
+
+    0 0 0 4px
+    var(--primary-soft);
+
+}
+
+
+
+#enterButton {
+
+  flex-shrink: 0;
+
+  height: 50px;
+
+  min-height: 50px;
+
+  padding:
+    0 23px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background:
+    var(--primary);
+
+  color:
+    #ffffff;
+
+  font-size: 14px;
+
+  font-weight: 650;
+
+  cursor: pointer;
+
+  box-shadow:
+
+    0 4px 12px
+    rgba(255,107,0,.18);
+
+  transition:
+
+    transform .15s ease,
+    background .15s ease,
+    box-shadow .15s ease;
+
+}
+
+
+#enterButton:hover {
+
+  background:
+    var(--primary-hover);
+
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+
+    0 6px 16px
+    rgba(255,107,0,.23);
+
+}
+
+
+#enterButton:active {
+
+  transform:
+    translateY(0);
+
+}
+
+
+
+.generate-key-link {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  margin-top: 16px;
+
+  padding: 0;
+
+  border: none;
+
+  background: none;
+
+  color: var(--text-secondary);
+
+  font-size: 13px;
+
+  font-weight: 550;
+
+  cursor: pointer;
+
+  text-decoration: underline;
+
+  text-decoration-color: transparent;
+
+  transition:
+
+    color .15s ease,
+    text-decoration-color .15s ease;
+
+}
+
+
+.generate-key-link:hover {
+
+  color: var(--primary);
+
+  text-decoration-color: var(--primary);
+
+}
+
+
+.generate-key-link svg {
+
+  flex-shrink: 0;
+
+  width: 14px;
+
+  height: 14px;
+
+}
+
+
+
+
+#padScreen {
+
+  display: none;
+
+  width: 100%;
+
+  height: 100vh;
+  height: 100dvh;
+
+  overflow: hidden;
+
+  background:
+    var(--background);
+
+}
+
+
+
+
+#topBar {
+
+  position: relative;
+
+  z-index: 10;
+
+  width: 100%;
+
+  height: 76px;
+
+  display: flex;
+
+  align-items: center;
+
+  padding:
+    0 18px 0 8px;
+
+  background:
+    rgba(255,255,255,.96);
+
+  border-bottom:
+    1px solid var(--border);
+
+  box-shadow:
+
+    0 1px 4px
+    rgba(0,0,0,.025);
+
+  backdrop-filter:
+    blur(10px);
+
+  -webkit-backdrop-filter:
+    blur(10px);
+
+}
+
+
+
+
+#backButton {
+
+  flex-shrink: 0;
+
+  width: 48px;
+
+  height: 48px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  margin-right: 8px;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background:
+    transparent;
+
+  color:
+    #454545;
+
+  font-size: 25px;
+
+  cursor: pointer;
+
+  transition:
+
+    background .15s ease,
+    transform .15s ease;
+
+}
+
+
+#backButton:hover {
+
+  background:
+    #f1f2f4;
+
+  transform:
+    translateX(-2px);
+
+}
+
+
+
+
+#keyDisplayArea {
+
+  flex: 1;
+
+  min-width: 0;
+
+  padding:
+    10px 14px;
+
+}
+
+
+.key-label {
+
+  margin-bottom: 5px;
+
+  color:
+    var(--text-secondary);
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  letter-spacing: .5px;
+
+  text-transform:
+    uppercase;
+
+}
+
+
+#padName {
+
+  display: block;
+
+  width: 100%;
+
+  padding-bottom: 7px;
+
+  overflow: hidden;
+
+  border-bottom:
+    2px solid var(--primary);
+
+  color:
+    #202020;
+
+  font-size: 15px;
+
+  font-weight: 550;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+
+}
+
+
+
+/* New dark status pill with glowing dot */
+#status {
+
+  flex-shrink: 0;
+
+  margin:
+    0 16px;
+
+  padding:
+    8px 16px;
+    
+  border-radius:
+    24px;
+    
+  background:
+    #111111;
+    
+  color:
+    #ffffff;
+    
+  font-size: 13px;
+
+  font-weight: 500;
+  
+  display: flex;
+  
+  align-items: center;
+  
+  justify-content: center;
+  
+  gap: 8px;
+  
+  transition:
+    all .2s ease;
+    
+  box-shadow:
+    0 2px 8px rgba(0,0,0,.08);
+
+}
+
+#status::before {
+
+  content: '';
+
+  display: block;
+
+  width: 8px;
+
+  height: 8px;
+
+  border-radius: 50%;
+
+  background: var(--status-color, #a1a1aa);
+
+  box-shadow: 0 0 8px var(--status-color, transparent);
+
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+
+}
+
+
+
+/* Updated save button with rounded pill shape and icon */
+#updateButton {
+
+  flex-shrink: 0;
+
+  height: 46px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  padding:
+    0 20px;
+
+  border: none;
+
+  border-radius: 12px;
+
+  background:
+    var(--primary);
+
+  color:
+    #ffffff;
+
+  font-size: 14px;
+
+  font-weight: 650;
+
+  cursor: pointer;
+
+  box-shadow:
+
+    0 4px 12px
+    rgba(255,107,0,.17);
+
+  transition:
+
+    background .15s ease,
+    transform .15s ease,
+    box-shadow .15s ease;
+
+}
+
+
+#updateButton:hover {
+
+  background:
+    var(--primary-hover);
+
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+
+    0 6px 15px
+    rgba(255,107,0,.22);
+
+}
+
+
+#updateButton:active {
+
+  transform:
+    translateY(0);
+
+}
+
+#updateButton svg {
+
+  width: 18px;
+  
+  height: 18px;
+  
+}
+
+
+
+#editorArea {
+
+  width: 100%;
+
+  height:
+    calc(100vh - 76px);
+
+  height:
+    calc(100dvh - 76px);
+
+  padding:
+
+    clamp(16px, 3vw, 32px)
+
+    clamp(12px, 4vw, 40px)
+
+    50px;
+
+  overflow: auto;
+
+  background:
+
+    linear-gradient(
+      180deg,
+      #f5f6f7,
+      #f1f2f4
+    );
+
+  scrollbar-width:
+    thin;
+
+  scrollbar-color:
+    #c8c8c8 transparent;
+
+}
+
+
+#editorArea::-webkit-scrollbar {
+
+  width: 8px;
+
+}
+
+
+#editorArea::-webkit-scrollbar-track {
+
+  background:
+    transparent;
+
+}
+
+
+#editorArea::-webkit-scrollbar-thumb {
+
+  background:
+    #c8c8c8;
+
+  border-radius:
+    10px;
+
+}
+
+
+
+
+#paper {
+
+  width: 100%;
+
+  max-width: 850px;
+
+  min-height:
+    calc(100vh - 140px);
+
+  min-height:
+    calc(100dvh - 140px);
+
+  margin:
+    0 auto;
+
+  overflow: hidden;
+
+  background:
+    #ffffff;
+
+  border:
+    1px solid rgba(0,0,0,.06);
+
+  border-radius:
+    7px;
+
+  box-shadow:
+    var(--shadow-medium);
+
+  transition:
+    box-shadow .2s ease;
+
+}
+
+
+#paper:focus-within {
+
+  box-shadow:
+
+    0 12px 35px
+    rgba(0,0,0,.08);
+
+}
+
+
+
+#pad {
+
+  display: block;
+
+  width: 100%;
+
+  min-height:
+    calc(100vh - 140px);
+
+  min-height:
+    calc(100dvh - 140px);
+
+  padding:
+    clamp(22px, 4vw, 40px);
+
+  border: none;
+
+  outline: none;
+
+  resize: none;
+
+  background:
+    transparent;
+
+  color:
+    #202124;
+
+  font-family:
+
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    Menlo,
+    monospace;
+
+  font-size:
+    clamp(14px, 1.3vw, 16px);
+
+  line-height: 1.7;
+
+  tab-size: 4;
+
+  caret-color:
+    var(--primary);
+
+}
+
+
+#pad::placeholder {
+
+  color:
+    #b0b3b8;
+
+}
+
+
+
+
+@media (max-width: 900px) {
+
+  #editorArea {
+
+    padding:
+      20px 18px 35px;
+
+  }
+
+}
+
+
+
+
+@media (max-width: 600px) {
+
+
+
+
+  #keyScreen {
+
+    padding:
+      18px;
+
+  }
+
+
+  .key-card {
+
+    width: 100%;
+
+    max-width: 100%;
+
+    padding:
+      34px 26px;
+
+    border-radius:
+      18px;
+
+  }
+
+
+  .key-card::before {
+
+    width: 52px;
+
+    height: 5px;
+
+    margin-bottom:
+      24px;
+
+  }
+
+
+  .key-card h1 {
+
+    margin-bottom:
+      12px;
+
+    font-size:
+      27px;
+
+    line-height:
+      1.2;
+
+  }
+
+
+  .key-card p {
+
+    margin-bottom:
+      27px;
+
+    font-size:
+      15px;
+
+    line-height:
+      1.6;
+
+  }
+
+
+
+
+  .key-input-row {
+
+    width: 100%;
+
+    display: flex;
+
+    flex-direction:
+      column;
+
+    gap:
+      13px;
+
+  }
+
+
+
+
+  #keyInput {
+
+    display: block;
+
+    flex: none;
+
+    width: 100% !important;
+
+    min-width: 100%;
+
+    height: 58px !important;
+
+    min-height: 58px !important;
+
+    max-height: 58px;
+
+    padding:
+      0 18px;
+
+    border:
+      1.5px solid #d7d9dd;
+
+    border-radius:
+      12px;
+
+    background:
+      #ffffff;
+
+    font-size:
+      16px;
+
+    line-height:
+      58px;
+
+    appearance:
+      none;
+
+    -webkit-appearance:
+      none;
+
+  }
+
+
+  #keyInput::placeholder {
+
+    color:
+      #a9adb3;
+
+    font-size:
+      16px;
+
+  }
+
+
+  #keyInput:focus {
+
+    border-color:
+      var(--primary);
+
+    box-shadow:
+
+      0 0 0 4px
+      rgba(255,107,0,.10);
+
+  }
+
+
+
+
+  #enterButton {
+
+    display: block;
+
+    width: 100%;
+
+    height:
+      58px;
+
+    min-height:
+      58px;
+
+    padding:
+      0 20px;
+
+    border-radius:
+      12px;
+
+    font-size:
+      16px;
+
+    font-weight:
+      650;
+
+    box-shadow:
+
+      0 6px 16px
+      rgba(255,107,0,.20);
+
+  }
+
+
+
+
+  #topBar {
+
+    height:
+      68px;
+
+    padding:
+      0 8px 0 3px;
+
+  }
+
+
+  #backButton {
+
+    width:
+      42px;
+
+    height:
+      42px;
+
+    margin-right:
+      2px;
+
+    font-size:
+      23px;
+
+  }
+
+
+  #keyDisplayArea {
+
+    padding:
+      8px 7px;
+
+  }
+
+
+  .key-label {
+
+    margin-bottom:
+      3px;
+
+    font-size:
+      9px;
+
+  }
+
+
+  #padName {
+
+    padding-bottom:
+      5px;
+
+    font-size:
+      13px;
+
+  }
+
+
+  /* Hide status on small screen */
+
+  #status {
+
+    display:
+      none;
+
+  }
+
+
+  /* =====================
+     UPDATE BUTTON
+  ===================== */
+
+  #updateButton {
+
+    height:
+      42px;
+
+    padding:
+      0 14px;
+
+    margin-left:
+      7px;
+
+    border-radius:
+      10px;
+
+    font-size:
+      13px;
+
+  }
+
+  #updateButton svg {
+
+    width: 16px;
+    
+    height: 16px;
+
+  }
+
+
+  /* =====================
+     EDITOR
+  ===================== */
+
+  #editorArea {
+
+    height:
+      calc(100vh - 68px);
+
+    height:
+      calc(100dvh - 68px);
+
+    padding:
+      10px;
+
+  }
+
+
+  #paper {
+
+    min-height:
+      calc(100vh - 88px);
+
+    min-height:
+      calc(100dvh - 88px);
+
+    border-radius:
+      6px;
+
+    box-shadow:
+
+      0 2px 8px
+      rgba(0,0,0,.05);
+
+  }
+
+
+  #pad {
+
+    min-height:
+      calc(100vh - 88px);
+
+    min-height:
+      calc(100dvh - 88px);
+
+    padding:
+      20px 17px;
+
+    font-size:
+      14px;
+
+    line-height:
+      1.65;
+
+  }
+
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+  #keyScreen {
+
+    padding:
+      12px;
+
+  }
+
+
+  .key-card {
+
+    padding:
+      28px 20px;
+
+  }
+
+
+  .key-card h1 {
+
+    font-size:
+      24px;
+
+  }
+
+
+  #topBar {
+
+    padding-right:
+      5px;
+
+  }
+
+
+  #backButton {
+
+    width:
+      38px;
+
+  }
+
+
+  #updateButton {
+
+    padding:
+      0 10px;
+
+    gap:
+      6px;
+
+    font-size:
+      12px;
+
+  }
+  
+  #updateButton svg {
+  
+    width: 14px;
+    
+    height: 14px;
+    
+  }
+
+
+  #pad {
+
+    padding:
+      17px 14px;
+
+  }
+
+}
+
+
+/* =========================================================
+   LARGE DESKTOP / 2K / 4K
+========================================================= */
+
+@media (min-width: 1600px) {
+
+  #paper {
+
+    max-width:
+      950px;
+
+  }
+
+
+  #pad {
+
+    font-size:
+      16px;
+
+  }
+
+
+  .key-card {
+
+    max-width:
+      490px;
+
+  }
+
+}
+
+
+/* =========================================================
+   LANDSCAPE PHONES
+========================================================= */
+
+@media
+(max-height: 500px)
+and
+(orientation: landscape) {
+
+  #keyScreen {
+
+    align-items:
+      flex-start;
+
+    overflow-y:
+      auto;
+
+    padding-top:
+      25px;
+
+    padding-bottom:
+      25px;
+
+  }
+
+
+  .key-card {
+
+    padding:
+      24px;
+
+  }
+
+
+  .key-card::before {
+
+    margin-bottom:
+      14px;
+
+  }
+
+
+  .key-card p {
+
+    margin-bottom:
+      15px;
+
+  }
+
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+
+    animation-duration:
+      .01ms !important;
+
+    animation-iteration-count:
+      1 !important;
+
+    transition-duration:
+      .01ms !important;
+
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     SCREEN 1
+====================================================== -->
+
+<div id="keyScreen">
+
+  <div class="key-card">
+
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <h1 style="margin: 0;">
+      Shared Clipboard
+    </h1>
+    <button class="transfer-btn" onclick="startFileTransfer()">
+      Transfer Files ⚡
+    </button>
+</div>
+
+
+    <p>
+      Enter your unique room key to open your shared clipboard.
+    </p>
+
+
+    <div class="key-input-row">
+
+
+      <input
+        id="keyInput"
+        type="text"
+        placeholder="Enter unique key"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        autofocus
+      >
+
+
+      <button
+        id="enterButton"
+        type="button"
+      >
+        Enter
+      </button>
+
+
+    </div>
+
+
+    <button
+      id="generateKeyButton"
+      type="button"
+      class="generate-key-link"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v18M3 12h18"></path>
+      </svg>
+      Generate a secure random key
+    </button>
+
+
+  </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     SCREEN 2
+====================================================== -->
+
+<div id="padScreen">
+
+
+  <!-- HEADER -->
+
+  <div id="topBar">
+
+
+    <button
+      id="backButton"
+      type="button"
+      aria-label="Go back"
+      title="Back"
+    >
+      ←
+    </button>
+
+
+    <div id="keyDisplayArea">
+
+
+      <div class="key-label">
+        Key
+      </div>
+
+
+      <span id="padName"></span>
+
+
+    </div>
+
+
+    <span id="status">
+      idle
+    </span>
+
+
+    <button
+      id="updateButton"
+      type="button"
+    >
+
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+
+      <span>
+        Update
+      </span>
+
+
+    </button>
+
+
+  </div>
+
+
+
+  <!-- EDITOR -->
+
+  <div id="editorArea">
+
+
+    <div id="paper">
+
+
+      <textarea
+        id="pad"
+        spellcheck="false"
+        placeholder="Start typing..."
+      ></textarea>
+
+
+    </div>
+
+
+  </div>
+
+
+</div>
+
+
+
+<script>
+
+
+function updateStatus(text) {
+
+  status.textContent = text;
+  
+  let color = '#a1a1aa';
+  
+  if (text === 'ready' || text === 'saved') color = '#10b981'; // Green dot for ready
+  else if (text === 'saving...') color = '#3b82f6';
+  else if (text === 'unsaved') color = 'var(--primary)'; // Orange for unsaved
+  else if (text.includes('error') || text === 'disconnected') color = '#ef4444';
+  
+  status.style.setProperty('--status-color', color);
+  
+}
+
+
+function getApiHost() {
+
+  return atob(
+
+    "Y2hhdC1zZXJ2ZXIuc2t5YmFzZW9majIud29ya2Vycy5kZXY="
+
+  );
+
+}
+
+
+
+function generateSecureKey(length = 22) {
+
+  const charset =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+  const bytes =
+    new Uint8Array(length);
+
+  crypto.getRandomValues(bytes);
+
+  return Array.from(
+
+    bytes,
+
+    b => charset[b % charset.length]
+
+  ).join("");
+
+}
+
+
+
+
+let ws;
+
+let room;
+
+let suppress = false;
+
+
+
+const keyInput =
+  document.getElementById("keyInput");
+
+
+const keyScreen =
+  document.getElementById("keyScreen");
+
+
+const padScreen =
+  document.getElementById("padScreen");
+
+
+const pad =
+  document.getElementById("pad");
+
+
+const status =
+  document.getElementById("status");
+
+
+const padName =
+  document.getElementById("padName");
+
+
+const enterButton =
+  document.getElementById("enterButton");
+
+
+const updateButton =
+  document.getElementById("updateButton");
+
+
+const backButton =
+  document.getElementById("backButton");
+
+
+const generateKeyButton =
+  document.getElementById("generateKeyButton");
+
+
+
+
+async function openPad() {
+
+
+  room =
+    keyInput.value.trim();
+
+
+  if (!room) {
+
+    keyInput.focus();
+
+    return;
+
+  }
+
+
+  /* Switch screens */
+
+  keyScreen.style.display =
+    "none";
+
+
+  padScreen.style.display =
+    "block";
+
+
+  /* Display key */
+
+  padName.textContent =
+    room;
+
+
+  updateStatus("loading...");
+
+
+  const apiHost =
+    getApiHost();
+
+
+
+
+  try {
+
+
+    const res =
+      await fetch(
+
+        `https://${apiHost}/history?room=${encodeURIComponent(room)}`
+
+      );
+
+
+    const history =
+      await res.json();
+
+
+    pad.value =
+
+      history.length
+
+        ? (
+            history[
+              history.length - 1
+            ].text || ""
+          )
+
+        : "";
+
+
+  }
+
+  catch (error) {
+
+
+    pad.value = "";
+
+
+  }
+
+
+
+
+
+  ws =
+    new WebSocket(
+
+      `wss://${apiHost}/?room=${encodeURIComponent(room)}`
+
+    );
+
+
+
+  ws.onopen =
+    () => {
+
+
+      updateStatus("ready");
+
+
+    };
+
+
+
+  ws.onmessage =
+    e => {
+
+
+      try {
+
+
+        const m =
+          JSON.parse(e.data);
+
+
+        if (
+          typeof m.text !== "string"
+        ) {
+
+          return;
+
+        }
+
+
+        suppress =
+          true;
+
+
+        pad.value =
+          m.text;
+
+
+        updateStatus("saved");
+
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "Invalid WebSocket message:",
+          error
+        );
+
+      }
+
+
+    };
+
+
+
+  ws.onerror =
+    () => {
+
+
+      updateStatus("connection error");
+
+
+    };
+
+
+
+  ws.onclose =
+    () => {
+
+
+      updateStatus("disconnected");
+
+
+    };
+
+
+  pad.focus();
+
+
+}
+
+
+
+/* =========================================================
+   ENTER BUTTON
+========================================================= */
+
+enterButton.addEventListener(
+
+  "click",
+
+  openPad
+
+);
+
+
+
+/* =========================================================
+   GENERATE KEY BUTTON
+========================================================= */
+
+generateKeyButton.addEventListener(
+
+  "click",
+
+  () => {
+
+
+    keyInput.value =
+      generateSecureKey();
+
+
+    keyInput.focus();
+
+
+  }
+
+);
+
+
+
+/* =========================================================
+   PRESS ENTER TO OPEN
+========================================================= */
+
+keyInput.addEventListener(
+
+  "keydown",
+
+  e => {
+
+
+    if (
+      e.key === "Enter"
+    ) {
+
+
+      e.preventDefault();
+
+
+      openPad();
+
+
+    }
+
+
+  }
+
+);
+
+
+
+/* =========================================================
+   DETECT CHANGES
+========================================================= */
+
+pad.addEventListener(
+
+  "input",
+
+  () => {
+
+
+    if (suppress) {
+
+
+      suppress =
+        false;
+
+
+      return;
+
+
+    }
+
+
+    updateStatus("unsaved");
+
+
+  }
+
+);
+
+
+
+/* =========================================================
+   UPDATE / SAVE
+========================================================= */
+
+updateButton.addEventListener(
+
+  "click",
+
+  () => {
+
+
+    if (
+      !ws ||
+      ws.readyState !== WebSocket.OPEN
+    ) {
+
+
+      updateStatus("not connected");
+
+
+      return;
+
+
+    }
+
+
+    updateStatus("saving...");
+
+
+    ws.send(
+
+      JSON.stringify({
+
+        user:
+          "__pad__",
+
+        text:
+          pad.value,
+
+        time:
+          Date.now()
+
+      })
+
+    );
+
+
+    updateStatus("saved");
+
+
+  }
+
+);
+
+
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
+
+backButton.addEventListener(
+
+  "click",
+
+  () => {
+
+
+    if (ws) {
+
+
+      ws.close();
+
+
+      ws =
+        null;
+
+
+    }
+
+
+    padScreen.style.display =
+      "none";
+
+
+    keyScreen.style.display =
+      "flex";
+
+
+    updateStatus("idle");
+
+
+    keyInput.focus();
+
+
+  }
+
+);
+
+</script>
+
+
+
+<style>
+.transfer-btn {
+    border: none;
+    background: linear-gradient(135deg, var(--primary), #ff8a00);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+    margin-left: 10px;
+}
+.transfer-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 0, 0.4);
+}
+@media (max-width: 450px) {
+    .transfer-btn {
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+}
+</style>
+<script>
+function startFileTransfer() {
+    alert("NOTE: Please make sure both the devices are connected to same network before starting File Transfer");
+    const html = decodeURIComponent("%0A%3C%21DOCTYPE%20html%3E%0A%3Chtml%20lang%3D%22en%22%3E%0A%3Chead%3E%0A%3Cmeta%20charset%3D%22UTF-8%22%3E%0A%3Cmeta%20name%3D%22viewport%22%20content%3D%22width%3Ddevice-width%2C%20initial-scale%3D1.0%22%3E%0A%0A%3Ctitle%3EQuickDrop%20-%20P2P%20File%20Sharing%3C/title%3E%0A%0A%3Cstyle%3E%0A%2A%7B%0A%20%20%20%20box-sizing%3Aborder-box%3B%0A%7D%0A%0A%3Aroot%7B%0A%20%20%20%20--bg%3A%23070a12%3B%0A%20%20%20%20--panel%3A%23101521%3B%0A%20%20%20%20--panel2%3A%230b1019%3B%0A%20%20%20%20--border%3A%23273044%3B%0A%20%20%20%20--text%3A%23f8fafc%3B%0A%20%20%20%20--muted%3A%238d98aa%3B%0A%20%20%20%20--accent%3A%236d5dfc%3B%0A%20%20%20%20--accent2%3A%238b5cf6%3B%0A%20%20%20%20--green%3A%2322c55e%3B%0A%20%20%20%20--red%3A%23ef4444%3B%0A%20%20%20%20--yellow%3A%23f59e0b%3B%0A%7D%0A%0Ahtml%2C%0Abody%7B%0A%20%20%20%20margin%3A0%3B%0A%20%20%20%20padding%3A0%3B%0A%20%20%20%20min-height%3A100%25%3B%0A%7D%0A%0Abody%7B%0A%20%20%20%20min-height%3A100vh%3B%0A%20%20%20%20padding%3A20px%3B%0A%0A%20%20%20%20font-family%3A%0A%20%20%20%20%20%20%20%20Inter%2C%0A%20%20%20%20%20%20%20%20system-ui%2C%0A%20%20%20%20%20%20%20%20-apple-system%2C%0A%20%20%20%20%20%20%20%20BlinkMacSystemFont%2C%0A%20%20%20%20%20%20%20%20%22Segoe%20UI%22%2C%0A%20%20%20%20%20%20%20%20sans-serif%3B%0A%0A%20%20%20%20color%3Avar%28--text%29%3B%0A%0A%20%20%20%20background%3A%0A%20%20%20%20%20%20%20%20radial-gradient%28%0A%20%20%20%20%20%20%20%20%20%20%20%20circle%20at%2015%25%2010%25%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20rgba%28109%2C93%2C252%2C.17%29%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20transparent%2030%25%0A%20%20%20%20%20%20%20%20%29%2C%0A%20%20%20%20%20%20%20%20radial-gradient%28%0A%20%20%20%20%20%20%20%20%20%20%20%20circle%20at%2085%25%2020%25%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20rgba%28139%2C92%2C246%2C.12%29%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20transparent%2030%25%0A%20%20%20%20%20%20%20%20%29%2C%0A%20%20%20%20%20%20%20%20var%28--bg%29%3B%0A%0A%20%20%20%20display%3Aflex%3B%0A%20%20%20%20justify-content%3Acenter%3B%0A%20%20%20%20align-items%3Acenter%3B%0A%7D%0A%0A.container%7B%0A%20%20%20%20width%3A100%25%3B%0A%20%20%20%20max-width%3A900px%3B%0A%7D%0A%0A.header%7B%0A%20%20%20%20text-align%3Acenter%3B%0A%20%20%20%20margin-bottom%3A22px%3B%0A%7D%0A%0A.logo%7B%0A%20%20%20%20width%3A56px%3B%0A%20%20%20%20height%3A56px%3B%0A%0A%20%20%20%20margin%3A0%20auto%2012px%3B%0A%0A%20%20%20%20border-radius%3A17px%3B%0A%0A%20%20%20%20display%3Aflex%3B%0A%20%20%20%20align-items%3Acenter%3B%0A%20%20%20%20justify-content%3Acenter%3B%0A%0A%20%20%20%20font-size%3A28px%3B%0A%0A%20%20%20%20background%3A%0A%20%20%20%20%20%20%20%20linear-gradient%28%0A%20%20%20%20%20%20%20%20%20%20%20%20135deg%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20var%28--accent%29%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20var%28--accent2%29%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20box-shadow%3A%0A%20%20%20%20%20%20%20%200%2015px%2045px%0A%20%20%20%20%20%20%20%20rgba%28109%2C93%2C252%2C.28%29%3B%0A%7D%0A%0Ah1%7B%0A%20%20%20%20margin%3A0%3B%0A%0A%20%20%20%20font-size%3A32px%3B%0A%0A%20%20%20%20letter-spacing%3A-.8px%3B%0A%7D%0A%0A.subtitle%7B%0A%20%20%20%20margin-top%3A7px%3B%0A%0A%20%20%20%20color%3Avar%28--muted%29%3B%0A%0A%20%20%20%20font-size%3A14px%3B%0A%7D%0A%0A.card%7B%0A%20%20%20%20background%3A%0A%20%20%20%20%20%20%20%20rgba%2816%2C21%2C33%2C.92%29%3B%0A%0A%20%20%20%20border%3A%0A%20%20%20%20%20%20%20%201px%20solid%20var%28--border%29%3B%0A%0A%20%20%20%20border-radius%3A24px%3B%0A%0A%20%20%20%20padding%3A24px%3B%0A%0A%20%20%20%20box-shadow%3A%0A%20%20%20%20%20%20%20%200%2025px%2080px%0A%20%20%20%20%20%20%20%20rgba%280%2C0%2C0%2C.38%29%3B%0A%0A%20%20%20%20backdrop-filter%3Ablur%2818px%29%3B%0A%7D%0A%0A.hidden%7B%0A%20%20%20%20display%3Anone%20%21important%3B%0A%7D%0A%0A.title%7B%0A%20%20%20%20font-size%3A15px%3B%0A%20%20%20%20font-weight%3A800%3B%0A%0A%20%20%20%20margin-bottom%3A10px%3B%0A%7D%0A%0A.label%7B%0A%20%20%20%20display%3Ablock%3B%0A%0A%20%20%20%20margin-bottom%3A7px%3B%0A%0A%20%20%20%20color%3A%23bcc5d4%3B%0A%0A%20%20%20%20font-size%3A13px%3B%0A%7D%0A%0A.input%7B%0A%20%20%20%20width%3A100%25%3B%0A%0A%20%20%20%20padding%3A14px%3B%0A%0A%20%20%20%20border-radius%3A13px%3B%0A%0A%20%20%20%20border%3A%0A%20%20%20%20%20%20%20%201px%20solid%20var%28--border%29%3B%0A%0A%20%20%20%20outline%3Anone%3B%0A%0A%20%20%20%20background%3A%23090e18%3B%0A%0A%20%20%20%20color%3Avar%28--text%29%3B%0A%0A%20%20%20%20font-size%3A17px%3B%0A%0A%20%20%20%20letter-spacing%3A2px%3B%0A%0A%20%20%20%20text-transform%3Auppercase%3B%0A%7D%0A%0A.input%3Afocus%7B%0A%20%20%20%20border-color%3Avar%28--accent%29%3B%0A%0A%20%20%20%20box-shadow%3A%0A%20%20%20%20%20%20%20%200%200%200%203px%0A%20%20%20%20%20%20%20%20rgba%28109%2C93%2C252%2C.14%29%3B%0A%7D%0A%0A.row%7B%0A%20%20%20%20display%3Agrid%3B%0A%0A%20%20%20%20grid-template-columns%3A%0A%20%20%20%20%20%20%20%201fr%201fr%3B%0A%0A%20%20%20%20gap%3A12px%3B%0A%7D%0A%0Abutton%7B%0A%20%20%20%20font%3Ainherit%3B%0A%20%20%20%20cursor%3Apointer%3B%0A%7D%0A%0A.btn%7B%0A%20%20%20%20width%3A100%25%3B%0A%0A%20%20%20%20border%3A0%3B%0A%0A%20%20%20%20padding%3A14px%2016px%3B%0A%0A%20%20%20%20border-radius%3A13px%3B%0A%0A%20%20%20%20font-weight%3A800%3B%0A%0A%20%20%20%20transition%3A.15s%3B%0A%7D%0A%0A.btn%3Ahover%7B%0A%20%20%20%20transform%3AtranslateY%28-1px%29%3B%0A%7D%0A%0A.primary%7B%0A%20%20%20%20color%3Awhite%3B%0A%0A%20%20%20%20background%3A%0A%20%20%20%20%20%20%20%20linear-gradient%28%0A%20%20%20%20%20%20%20%20%20%20%20%20135deg%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20var%28--accent%29%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20var%28--accent2%29%0A%20%20%20%20%20%20%20%20%29%3B%0A%7D%0A%0A.secondary%7B%0A%20%20%20%20color%3A%23dce2ed%3B%0A%0A%20%20%20%20background%3A%23182131%3B%0A%0A%20%20%20%20border%3A%0A%20%20%20%20%20%20%20%201px%20solid%20var%28--border%29%3B%0A%7D%0A%0A.danger%7B%0A%20%20%20%20color%3A%23ff9d9d%3B%0A%0A%20%20%20%20background%3A%0A%20%20%20%20%20%20%20%20rgba%28239%2C68%2C68%2C.10%29%3B%0A%0A%20%20%20%20border%3A%0A%20%20%20%20%20%20%20%201px%20solid%0A%20%20%20%20%20%20%20%20rgba%28239%2C68%2C68%2C.24%29%3B%0A%7D%0A%0A.notice%7B%0A%20%20%20%20margin-top%3A15px%3B%0A%0A%20%20%20%20padding%3A12px%3B%0A%0A%20%20%20%20border-radius%3A14px%3B%0A%0A%20%20%20%20background%3A%0A%20%20%20%20%20%20%20%20rgba%28109%2C93%2C252%2C.07%29%3B%0A%0A%20%20%20%20border%3A%0A%20%20%20%20%20%20%20%201px%20solid%0A%20%20%20%20%20%20%20%20rgba%28109%2C93%2C252%2C.18%29%3B%0A%0A%20%20%20%20color%3A%23bdc2ff%3B%0A%0A%20%20%20%20font-size%3A12px%3B%0A%0A%20%20%20%20line-height%3A1.5%3B%0A%7D%0A%0A.room%7B%0A%20%20%20%20display%3Aflex%3B%0A%0A%20%20%20%20align-items%3Acenter%3B%0A%20%20%20%20justify-content%3Aspace-between%3B%0A%0A%20%20%20%20gap%3A15px%3B%0A%0A%20%20%20%20padding%3A17px%3B%0A%0A%20%20%20%20margin-bottom%3A17px%3B%0A%0A%20%20%20%20background%3Avar%28--panel2%29%3B%0A%0A%20%20%20%20border%3A%0A%20%20%20%20%20%20%20%201px%20solid%20var%28--border%29%3B%0A%0A%20%20%20%20border-radius%3A16px%3B%0A%7D%0A%0A.roomLabel%7B%0A%20%20%20%20color%3A%23778297%3B%0A%0A%20%20%20%20font-size%3A11px%3B%0A%0A%20%20%20%20margin-bottom%3A5px%3B%0A%7D%0A%0A.roomCode%7B%0A%20%20%20%20font-size%3A25px%3B%0A%0A%20%20%20%20font-weight%3A900%3B%0A%0A%20%20%20%20letter-spacing%3A5px%3B%0A%7D%0A%0A.copy%7B%0A%20%20%20%20width%3Aauto%3B%0A%0A%20%20%20%20padding%3A9px%2015px%3B%0A%0A%20%20%20%20font-size%3A13px%3B%0A%7D%0A%0A.status%7B%0A%20%20%20%20display%3Aflex%3B%0A%0A%20%20%20%20align-items%3Acenter%3B%0A%0A%20%20%20%20gap%3A9px%3B%0A%0A%20%20%20%20margin-bottom%3A18px%3B%0A%0A%20%20%20%20color%3Avar%28--muted%29%3B%0A%0A%20%20%20%20font-size%3A14px%3B%0A%7D%0A%0A.dot%7B%0A%20%20%20%20width%3A9px%3B%0A%20%20%20%20height%3A9px%3B%0A%0A%20%20%20%20border-radius%3A50%25%3B%0A%0A%20%20%20%20background%3A%23667085%3B%0A%0A%20%20%20%20flex%3Anone%3B%0A%7D%0A%0A.dot.connected%7B%0A%20%20%20%20background%3Avar%28--green%29%3B%0A%0A%20%20%20%20box-shadow%3A%0A%20%20%20%20%20%20%20%200%200%2014px%0A%20%20%20%20%20%20%20%20rgba%2834%2C197%2C94%2C.7%29%3B%0A%7D%0A%0A.dot.waiting%7B%0A%20%20%20%20background%3Avar%28--yellow%29%3B%0A%0A%20%20%20%20box-shadow%3A%0A%20%20%20%20%20%20%20%200%200%2012px%0A%20%20%20%20%20%20%20%20rgba%28245%2C158%2C11%2C.5%29%3B%0A%7D%0A%0A.dot.error%7B%0A%20%20%20%20background%3Avar%28--red%29%3B%0A%0A%20%20%20%20box-shadow%3A%0A%20%20%20%20%20%20%20%200%200%2012px%0A%20%20%20%20%20%20%20%20rgba%28239%2C68%2C68%2C.5%29%3B%0A%7D%0A%0A.drop%7B%0A%20%20%20%20min-height%3A220px%3B%0A%0A%20%20%20%20border%3A%0A%20%20%20%20%20%20%20%202px%20dashed%20%23303b52%3B%0A%0A%20%20%20%20border-radius%3A20px%3B%0A%0A%20%20%20%20display%3Aflex%3B%0A%0A%20%20%20%20align-items%3Acenter%3B%0A%20%20%20%20justify-content%3Acenter%3B%0A%0A%20%20%20%20text-align%3Acenter%3B%0A%0A%20%20%20%20cursor%3Apointer%3B%0A%0A%20%20%20%20transition%3A.2s%3B%0A%7D%0A%0A.drop%3Ahover%2C%0A.drop.drag%7B%0A%20%20%20%20border-color%3Avar%28--accent%29%3B%0A%0A%20%20%20%20background%3A%0A%20%20%20%20%20%20%20%20rgba%28109%2C93%2C252%2C.06%29%3B%0A%7D%0A%0A.drop.disabled%7B%0A%20%20%20%20opacity%3A.55%3B%0A%0A%20%20%20%20cursor%3Anot-allowed%3B%0A%7D%0A%0A.dropIcon%7B%0A%20%20%20%20font-size%3A42px%3B%0A%0A%20%20%20%20margin-bottom%3A10px%3B%0A%7D%0A%0A.dropTitle%7B%0A%20%20%20%20font-size%3A18px%3B%0A%0A%20%20%20%20font-weight%3A800%3B%0A%7D%0A%0A.dropText%7B%0A%20%20%20%20color%3Avar%28--muted%29%3B%0A%0A%20%20%20%20margin-top%3A5px%3B%0A%0A%20%20%20%20font-size%3A13px%3B%0A%7D%0A%0A.fileInput%7B%0A%20%20%20%20display%3Anone%3B%0A%7D%0A%0A.section%7B%0A%20%20%20%20margin-top%3A22px%3B%0A%7D%0A%0A.sectionTitle%7B%0A%20%20%20%20font-size%3A14px%3B%0A%0A%20%20%20%20font-weight%3A800%3B%0A%7D%0A%0A.transfer%7B%0A%20%20%20%20margin-top%3A10px%3B%0A%0A%20%20%20%20padding%3A15px%3B%0A%0A%20%20%20%20background%3Avar%28--panel2%29%3B%0A%0A%20%20%20%20border%3A%0A%20%20%20%20%20%20%20%201px%20solid%20var%28--border%29%3B%0A%0A%20%20%20%20border-radius%3A16px%3B%0A%7D%0A%0A.transferTop%7B%0A%20%20%20%20display%3Aflex%3B%0A%0A%20%20%20%20justify-content%3Aspace-between%3B%0A%0A%20%20%20%20gap%3A12px%3B%0A%7D%0A%0A.filename%7B%0A%20%20%20%20font-weight%3A800%3B%0A%0A%20%20%20%20word-break%3Abreak-word%3B%0A%7D%0A%0A.filemeta%7B%0A%20%20%20%20margin-top%3A4px%3B%0A%0A%20%20%20%20color%3Avar%28--muted%29%3B%0A%0A%20%20%20%20font-size%3A12px%3B%0A%7D%0A%0A.progress%7B%0A%20%20%20%20height%3A8px%3B%0A%0A%20%20%20%20margin-top%3A13px%3B%0A%0A%20%20%20%20overflow%3Ahidden%3B%0A%0A%20%20%20%20border-radius%3A50px%3B%0A%0A%20%20%20%20background%3A%231b2434%3B%0A%7D%0A%0A.progressBar%7B%0A%20%20%20%20width%3A0%25%3B%0A%0A%20%20%20%20height%3A100%25%3B%0A%0A%20%20%20%20background%3A%0A%20%20%20%20%20%20%20%20linear-gradient%28%0A%20%20%20%20%20%20%20%20%20%20%20%2090deg%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20var%28--accent%29%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20var%28--accent2%29%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20transition%3A%0A%20%20%20%20%20%20%20%20width%20.10s%20linear%3B%0A%7D%0A%0A.transferBottom%7B%0A%20%20%20%20display%3Aflex%3B%0A%0A%20%20%20%20justify-content%3Aspace-between%3B%0A%0A%20%20%20%20gap%3A10px%3B%0A%0A%20%20%20%20margin-top%3A8px%3B%0A%0A%20%20%20%20color%3Avar%28--muted%29%3B%0A%0A%20%20%20%20font-size%3A12px%3B%0A%7D%0A%0A.downloadArea%7B%0A%20%20%20%20display%3Aflex%3B%0A%0A%20%20%20%20flex-wrap%3Awrap%3B%0A%0A%20%20%20%20gap%3A9px%3B%0A%0A%20%20%20%20margin-top%3A12px%3B%0A%7D%0A%0A.downloadLink%2C%0A.openLink%7B%0A%20%20%20%20display%3Ainline-flex%3B%0A%0A%20%20%20%20align-items%3Acenter%3B%0A%20%20%20%20justify-content%3Acenter%3B%0A%0A%20%20%20%20min-height%3A43px%3B%0A%0A%20%20%20%20padding%3A10px%2014px%3B%0A%0A%20%20%20%20border-radius%3A11px%3B%0A%0A%20%20%20%20text-decoration%3Anone%3B%0A%0A%20%20%20%20font-size%3A13px%3B%0A%0A%20%20%20%20font-weight%3A800%3B%0A%7D%0A%0A.downloadLink%7B%0A%20%20%20%20color%3Awhite%3B%0A%0A%20%20%20%20background%3A%0A%20%20%20%20%20%20%20%20linear-gradient%28%0A%20%20%20%20%20%20%20%20%20%20%20%20135deg%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20var%28--accent%29%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20var%28--accent2%29%0A%20%20%20%20%20%20%20%20%29%3B%0A%7D%0A%0A.openLink%7B%0A%20%20%20%20color%3A%23dce2ed%3B%0A%0A%20%20%20%20background%3A%23182131%3B%0A%0A%20%20%20%20border%3A%0A%20%20%20%20%20%20%20%201px%20solid%20var%28--border%29%3B%0A%7D%0A%0A.info%7B%0A%20%20%20%20width%3A100%25%3B%0A%0A%20%20%20%20margin-top%3A8px%3B%0A%0A%20%20%20%20color%3Avar%28--muted%29%3B%0A%0A%20%20%20%20font-size%3A11px%3B%0A%0A%20%20%20%20line-height%3A1.5%3B%0A%7D%0A%0A.logs%7B%0A%20%20%20%20height%3A160px%3B%0A%0A%20%20%20%20overflow%3Aauto%3B%0A%0A%20%20%20%20margin-top%3A10px%3B%0A%0A%20%20%20%20padding%3A12px%3B%0A%0A%20%20%20%20background%3A%23070b12%3B%0A%0A%20%20%20%20border%3A%0A%20%20%20%20%20%20%20%201px%20solid%20var%28--border%29%3B%0A%0A%20%20%20%20border-radius%3A14px%3B%0A%0A%20%20%20%20color%3A%2391a0b8%3B%0A%0A%20%20%20%20font%3A%0A%20%20%20%20%20%20%20%2012px%20ui-monospace%2C%0A%20%20%20%20%20%20%20%20SFMono-Regular%2C%0A%20%20%20%20%20%20%20%20Menlo%2C%0A%20%20%20%20%20%20%20%20monospace%3B%0A%0A%20%20%20%20white-space%3Apre-wrap%3B%0A%7D%0A%0A.footer%7B%0A%20%20%20%20margin-top%3A15px%3B%0A%0A%20%20%20%20text-align%3Acenter%3B%0A%0A%20%20%20%20color%3A%23667085%3B%0A%0A%20%20%20%20font-size%3A11px%3B%0A%7D%0A%0A.connectionInfo%7B%0A%20%20%20%20margin-top%3A12px%3B%0A%0A%20%20%20%20padding%3A11px%3B%0A%0A%20%20%20%20border-radius%3A12px%3B%0A%0A%20%20%20%20background%3A%230b1019%3B%0A%0A%20%20%20%20border%3A%0A%20%20%20%20%20%20%20%201px%20solid%20var%28--border%29%3B%0A%0A%20%20%20%20color%3Avar%28--muted%29%3B%0A%0A%20%20%20%20font-size%3A11px%3B%0A%0A%20%20%20%20line-height%3A1.5%3B%0A%7D%0A%0A%40media%28max-width%3A650px%29%7B%0A%0A%20%20%20%20body%7B%0A%20%20%20%20%20%20%20%20padding%3A10px%3B%0A%0A%20%20%20%20%20%20%20%20align-items%3Aflex-start%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20.card%7B%0A%20%20%20%20%20%20%20%20padding%3A17px%3B%0A%0A%20%20%20%20%20%20%20%20border-radius%3A19px%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20.row%7B%0A%20%20%20%20%20%20%20%20grid-template-columns%3A1fr%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20.room%7B%0A%20%20%20%20%20%20%20%20flex-direction%3Acolumn%3B%0A%0A%20%20%20%20%20%20%20%20align-items%3Astretch%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20.copy%7B%0A%20%20%20%20%20%20%20%20width%3A100%25%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20.downloadArea%7B%0A%20%20%20%20%20%20%20%20flex-direction%3Acolumn%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20.downloadLink%2C%0A%20%20%20%20.openLink%7B%0A%20%20%20%20%20%20%20%20width%3A100%25%3B%0A%20%20%20%20%7D%0A%7D%0A%3C/style%3E%0A%3C/head%3E%0A%0A%3Cbody%3E%0A%3Cbutton%20onclick%3D%22window.location.reload%28%29%22%20class%3D%22btn%20secondary%22%20style%3D%22position%3A%20absolute%3B%20top%3A%2020px%3B%20left%3A%2020px%3B%20width%3A%20auto%3B%20padding%3A%208px%2015px%3B%20font-size%3A%2013px%3B%22%3E%E2%86%90%20Back%3C/button%3E%0A%0A%0A%3Cdiv%20class%3D%22container%22%3E%0A%0A%20%20%20%20%3Cdiv%20class%3D%22header%22%3E%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22logo%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%E2%9A%A1%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%3Ch1%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20QuickDrop%0A%20%20%20%20%20%20%20%20%3C/h1%3E%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22subtitle%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20Powered%20by%20kypad%20%20%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%3C/div%3E%0A%0A%0A%20%20%20%20%3C%21--%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20%20%20%20%20%20%20JOIN%20PAGE%0A%20%20%20%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20--%3E%0A%0A%20%20%20%20%3Cdiv%0A%20%20%20%20%20%20%20%20id%3D%22joinPage%22%0A%20%20%20%20%20%20%20%20class%3D%22card%22%0A%20%20%20%20%3E%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22title%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20Connect%20devices%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20id%3D%22joinInputArea%22%20style%3D%22display%3A%20none%3B%20margin-bottom%3A%2012px%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Clabel%20class%3D%22label%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Room%20key%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/label%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cinput%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20id%3D%22roomInput%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20class%3D%22input%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20maxlength%3D%2216%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20autocomplete%3D%22off%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20placeholder%3D%22Example%3A%20X6U8X6%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%3E%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22row%22%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cbutton%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20id%3D%22createButton%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20class%3D%22btn%20primary%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Create%20Room%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/button%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cbutton%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20id%3D%22joinButton%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20class%3D%22btn%20secondary%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Join%20Room%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/button%3E%0A%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22notice%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20Enter%20the%20same%20room%20key%20on%20both%20devices.%0A%20%20%20%20%20%20%20%20%20%20%20%20After%20the%20connection%20is%20established%2C%20files%20are%0A%20%20%20%20%20%20%20%20%20%20%20%20transferred%20directly%20between%20the%20browsers.%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%3C/div%3E%0A%0A%0A%20%20%20%20%3C%21--%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20%20%20%20%20%20%20APP%20PAGE%0A%20%20%20%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20--%3E%0A%0A%20%20%20%20%3Cdiv%0A%20%20%20%20%20%20%20%20id%3D%22appPage%22%0A%20%20%20%20%20%20%20%20class%3D%22card%20hidden%22%0A%20%20%20%20%3E%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22room%22%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22roomLabel%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20ROOM%20KEY%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20id%3D%22roomCode%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20class%3D%22roomCode%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3E%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cbutton%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20id%3D%22copyButton%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20class%3D%22btn%20secondary%20copy%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Copy%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/button%3E%0A%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22status%22%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cspan%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20id%3D%22statusDot%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20class%3D%22dot%20waiting%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%3E%3C/span%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cspan%20id%3D%22statusText%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Connecting...%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/span%3E%0A%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%0A%20%20%20%20%20%20%20%20%3Clabel%0A%20%20%20%20%20%20%20%20%20%20%20%20id%3D%22dropZone%22%0A%20%20%20%20%20%20%20%20%20%20%20%20class%3D%22drop%20disabled%22%0A%20%20%20%20%20%20%20%20%20%20%20%20for%3D%22fileInput%22%0A%20%20%20%20%20%20%20%20%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cinput%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20id%3D%22fileInput%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20class%3D%22fileInput%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20type%3D%22file%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20multiple%0A%20%20%20%20%20%20%20%20%20%20%20%20%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22dropIcon%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%F0%9F%93%81%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22dropTitle%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Click%20to%20select%20files%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22dropText%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20or%20drag%20%26%20drop%20files%20here%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%3C/label%3E%0A%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22connectionInfo%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20Signaling%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cstrong%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20quickdrop-signaling.freefireranked266.workers.dev%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/strong%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cbr%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20File%20transfer%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cstrong%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20WebRTC%20peer-to-peer%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/strong%3E%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22section%22%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22sectionTitle%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Transfers%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20id%3D%22transfers%22%3E%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22section%22%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22sectionTitle%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Connection%20log%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20id%3D%22logs%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20class%3D%22logs%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%3E%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20style%3D%22height%3A12px%22%3E%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%3Cbutton%0A%20%20%20%20%20%20%20%20%20%20%20%20id%3D%22leaveButton%22%0A%20%20%20%20%20%20%20%20%20%20%20%20class%3D%22btn%20danger%22%0A%20%20%20%20%20%20%20%20%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20Leave%20Room%0A%20%20%20%20%20%20%20%20%3C/button%3E%0A%0A%20%20%20%20%3C/div%3E%0A%0A%0A%20%20%20%20%3Cdiv%20class%3D%22footer%22%3E%0A%20%20%20%20%20%20%20%20QuickDrop%20%E2%80%A2%20No%20server-side%20file%20storage%0A%20%20%20%20%3C/div%3E%0A%0A%3C/div%3E%0A%0A%0A%3Cscript%3E%0A%28%28%29%20%3D%3E%20%7B%0A%0A%0A%22use%20strict%22%3B%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20QUICKDROP%20CONFIGURATION%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0A/%2A%0A%20%2A%20THIS%20IS%20YOUR%20CURRENT%20MAIN%20WORKER.%0A%20%2A/%0A%0Aconst%20SIGNALING_SERVER%20%3D%0A%20%20%20%20%22https%3A//quickdrop-signaling.freefireranked266.workers.dev%22%3B%0A%0A%0A/%2A%0A%20%2A%20WebSocket%20endpoint.%0A%20%2A/%0A%0Aconst%20WS_URL%20%3D%0A%20%20%20%20%22wss%3A//quickdrop-signaling.freefireranked266.workers.dev/websocket%22%3B%0A%0A%0A/%2A%0A%20%2A%20STUN%20servers%20help%20browsers%20discover%20network%20paths.%0A%20%2A/%0A%0Aconst%20RTC_CONFIG%20%3D%20%7B%0A%0A%20%20%20%20iceServers%3A%20%5B%0A%0A%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20urls%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22stun%3Astun.l.google.com%3A19302%22%0A%20%20%20%20%20%20%20%20%7D%2C%0A%0A%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20urls%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22stun%3Astun1.l.google.com%3A19302%22%0A%20%20%20%20%20%20%20%20%7D%2C%0A%0A%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20urls%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22stun%3Astun2.l.google.com%3A19302%22%0A%20%20%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%5D%0A%0A%7D%3B%0A%0A%0A/%2A%0A%20%2A%20File%20chunks.%0A%20%2A/%0A%0Aconst%20CHUNK_SIZE%20%3D%0A%20%20%20%2064%20%2A%201024%3B%0A%0A%0A/%2A%0A%20%2A%20DataChannel%20backpressure.%0A%20%2A/%0A%0Aconst%20HIGH_WATER_MARK%20%3D%0A%20%20%20%20CHUNK_SIZE%20%2A%2016%3B%0A%0Aconst%20LOW_WATER_MARK%20%3D%0A%20%20%20%20CHUNK_SIZE%20%2A%208%3B%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20DOM%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Aconst%20joinPage%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22joinPage%22%0A%20%20%20%20%29%3B%0A%0Aconst%20appPage%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22appPage%22%0A%20%20%20%20%29%3B%0A%0Aconst%20roomInput%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22roomInput%22%0A%20%20%20%20%29%3B%0A%0Aconst%20createButton%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22createButton%22%0A%20%20%20%20%29%3B%0A%0Aconst%20joinButton%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22joinButton%22%0A%20%20%20%20%29%3B%0A%0Aconst%20roomCode%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22roomCode%22%0A%20%20%20%20%29%3B%0A%0Aconst%20copyButton%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22copyButton%22%0A%20%20%20%20%29%3B%0A%0Aconst%20statusText%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22statusText%22%0A%20%20%20%20%29%3B%0A%0Aconst%20statusDot%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22statusDot%22%0A%20%20%20%20%29%3B%0A%0Aconst%20fileInput%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22fileInput%22%0A%20%20%20%20%29%3B%0A%0Aconst%20dropZone%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22dropZone%22%0A%20%20%20%20%29%3B%0A%0Aconst%20transfers%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22transfers%22%0A%20%20%20%20%29%3B%0A%0Aconst%20logs%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22logs%22%0A%20%20%20%20%29%3B%0A%0Aconst%20leaveButton%20%3D%0A%20%20%20%20document.getElementById%28%0A%20%20%20%20%20%20%20%20%22leaveButton%22%0A%20%20%20%20%29%3B%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20STATE%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Alet%20room%20%3D%20%22%22%3B%0A%0Alet%20isCreator%20%3D%20false%3B%0A%0Alet%20socket%20%3D%20null%3B%0A%0Alet%20peer%20%3D%20null%3B%0A%0Alet%20dataChannel%20%3D%20null%3B%0A%0Alet%20peerJoined%20%3D%20false%3B%0A%0Alet%20offerSent%20%3D%20false%3B%0A%0Alet%20connected%20%3D%20false%3B%0A%0Alet%20leaving%20%3D%20false%3B%0A%0A%0A/%2A%0A%20%2A%20ICE%20candidates%20that%20arrive%20before%0A%20%2A%20setRemoteDescription%28%29.%0A%20%2A/%0A%0Alet%20pendingCandidates%20%3D%20%5B%5D%3B%0A%0A%0A/%2A%0A%20%2A%20Currently%20receiving%20file.%0A%20%2A/%0A%0Alet%20incomingFile%20%3D%20null%3B%0A%0A%0A/%2A%0A%20%2A%20Used%20to%20avoid%20accidental%20duplicate%0A%20%2A%20signal%20handling.%0A%20%2A/%0A%0Alet%20receivedOffer%20%3D%20false%3B%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20GENERAL%20HELPERS%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Afunction%20log%28message%29%7B%0A%0A%20%20%20%20const%20time%20%3D%0A%20%20%20%20%20%20%20%20new%20Date%28%29.toLocaleTimeString%28%29%3B%0A%0A%20%20%20%20logs.textContent%20%2B%3D%0A%20%20%20%20%20%20%20%20%60%5B%24%7Btime%7D%5D%20%24%7Bmessage%7D%5Cn%60%3B%0A%0A%20%20%20%20logs.scrollTop%20%3D%0A%20%20%20%20%20%20%20%20logs.scrollHeight%3B%0A%7D%0A%0A%0Afunction%20setStatus%28%0A%20%20%20%20message%2C%0A%20%20%20%20state%20%3D%20%22waiting%22%0A%29%7B%0A%0A%20%20%20%20statusText.textContent%20%3D%0A%20%20%20%20%20%20%20%20message%3B%0A%0A%20%20%20%20statusDot.classList.remove%28%0A%20%20%20%20%20%20%20%20%22connected%22%2C%0A%20%20%20%20%20%20%20%20%22waiting%22%2C%0A%20%20%20%20%20%20%20%20%22error%22%0A%20%20%20%20%29%3B%0A%0A%20%20%20%20statusDot.classList.add%28%0A%20%20%20%20%20%20%20%20state%0A%20%20%20%20%29%3B%0A%7D%0A%0A%0Afunction%20formatBytes%28bytes%29%7B%0A%0A%20%20%20%20if%28bytes%20%3C%201024%29%0A%20%20%20%20%20%20%20%20return%20bytes%20%2B%20%22%20B%22%3B%0A%0A%20%20%20%20if%28bytes%20%3C%201024%20%2A%2A%202%29%0A%20%20%20%20%20%20%20%20return%20%28%0A%20%20%20%20%20%20%20%20%20%20%20%20bytes%20/%201024%0A%20%20%20%20%20%20%20%20%29.toFixed%281%29%20%2B%20%22%20KB%22%3B%0A%0A%20%20%20%20if%28bytes%20%3C%201024%20%2A%2A%203%29%0A%20%20%20%20%20%20%20%20return%20%28%0A%20%20%20%20%20%20%20%20%20%20%20%20bytes%20/%201024%20/%201024%0A%20%20%20%20%20%20%20%20%29.toFixed%281%29%20%2B%20%22%20MB%22%3B%0A%0A%20%20%20%20return%20%28%0A%20%20%20%20%20%20%20%20bytes%20/%0A%20%20%20%20%20%20%20%201024%20/%0A%20%20%20%20%20%20%20%201024%20/%0A%20%20%20%20%20%20%20%201024%0A%20%20%20%20%29.toFixed%282%29%20%2B%20%22%20GB%22%3B%0A%7D%0A%0A%0Afunction%20formatSpeed%28value%29%7B%0A%0A%20%20%20%20return%20formatBytes%28value%29%20%2B%20%22/s%22%3B%0A%7D%0A%0A%0Afunction%20cleanRoom%28value%29%7B%0A%0A%20%20%20%20return%20String%28value%29%0A%20%20%20%20%20%20%20%20.toUpperCase%28%29%0A%20%20%20%20%20%20%20%20.replace%28%0A%20%20%20%20%20%20%20%20%20%20%20%20/%5B%5EA-Z0-9%5D/g%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%22%22%0A%20%20%20%20%20%20%20%20%29%0A%20%20%20%20%20%20%20%20.slice%280%2C16%29%3B%0A%7D%0A%0A%0Afunction%20createRoomKey%28%29%7B%0A%0A%20%20%20%20const%20chars%20%3D%0A%20%20%20%20%20%20%20%20%22ABCDEFGHJKLMNPQRSTUVWXYZ23456789%22%3B%0A%0A%20%20%20%20let%20result%20%3D%20%22%22%3B%0A%0A%20%20%20%20for%28%0A%20%20%20%20%20%20%20%20let%20i%20%3D%200%3B%0A%20%20%20%20%20%20%20%20i%20%3C%206%3B%0A%20%20%20%20%20%20%20%20i%2B%2B%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20result%20%2B%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20chars%5B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Math.floor%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Math.random%28%29%20%2A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20chars.length%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29%0A%20%20%20%20%20%20%20%20%20%20%20%20%5D%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20return%20result%3B%0A%7D%0A%0A%0Afunction%20escapeHtml%28value%29%7B%0A%0A%20%20%20%20return%20String%28value%29%0A%20%20%20%20%20%20%20%20.replace%28%0A%20%20%20%20%20%20%20%20%20%20%20%20/%26/g%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%22%26amp%3B%22%0A%20%20%20%20%20%20%20%20%29%0A%20%20%20%20%20%20%20%20.replace%28%0A%20%20%20%20%20%20%20%20%20%20%20%20/%3C/g%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%22%26lt%3B%22%0A%20%20%20%20%20%20%20%20%29%0A%20%20%20%20%20%20%20%20.replace%28%0A%20%20%20%20%20%20%20%20%20%20%20%20/%3E/g%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%22%26gt%3B%22%0A%20%20%20%20%20%20%20%20%29%0A%20%20%20%20%20%20%20%20.replace%28%0A%20%20%20%20%20%20%20%20%20%20%20%20/%22/g%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%22%26quot%3B%22%0A%20%20%20%20%20%20%20%20%29%0A%20%20%20%20%20%20%20%20.replace%28%0A%20%20%20%20%20%20%20%20%20%20%20%20/%27/g%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%22%26%23039%3B%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20UI%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Afunction%20openApp%28%29%7B%0A%0A%20%20%20%20roomCode.textContent%20%3D%0A%20%20%20%20%20%20%20%20room%3B%0A%0A%20%20%20%20joinPage.classList.add%28%0A%20%20%20%20%20%20%20%20%22hidden%22%0A%20%20%20%20%29%3B%0A%0A%20%20%20%20appPage.classList.remove%28%0A%20%20%20%20%20%20%20%20%22hidden%22%0A%20%20%20%20%29%3B%0A%7D%0A%0A%0Afunction%20openJoin%28%29%7B%0A%0A%20%20%20%20appPage.classList.add%28%0A%20%20%20%20%20%20%20%20%22hidden%22%0A%20%20%20%20%29%3B%0A%0A%20%20%20%20joinPage.classList.remove%28%0A%20%20%20%20%20%20%20%20%22hidden%22%0A%20%20%20%20%29%3B%0A%7D%0A%0A%0Afunction%20enableFileSharing%28%29%7B%0A%0A%20%20%20%20dropZone.classList.remove%28%0A%20%20%20%20%20%20%20%20%22disabled%22%0A%20%20%20%20%29%3B%0A%0A%20%20%20%20fileInput.disabled%20%3D%0A%20%20%20%20%20%20%20%20false%3B%0A%7D%0A%0A%0Afunction%20disableFileSharing%28%29%7B%0A%0A%20%20%20%20dropZone.classList.add%28%0A%20%20%20%20%20%20%20%20%22disabled%22%0A%20%20%20%20%29%3B%0A%0A%20%20%20%20fileInput.disabled%20%3D%0A%20%20%20%20%20%20%20%20true%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20CREATE%20ROOM%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0AcreateButton.onclick%20%3D%0Aasync%20function%28%29%7B%0A%0A%20%20%20%20if%28socket%29%0A%20%20%20%20%20%20%20%20return%3B%0A%0A%20%20%20%20room%20%3D%0A%20%20%20%20%20%20%20%20createRoomKey%28%29%3B%0A%0A%20%20%20%20isCreator%20%3D%0A%20%20%20%20%20%20%20%20true%3B%0A%0A%20%20%20%20openApp%28%29%3B%0A%0A%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%22Created%20room%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20room%0A%20%20%20%20%29%3B%0A%0A%20%20%20%20await%20connectToSignaling%28%29%3B%0A%7D%3B%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20JOIN%20ROOM%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0AjoinButton.onclick%20%3D%0Aasync%20function%28%29%7B%0A%20%20%20%20const%20inputArea%20%3D%20document.getElementById%28%22joinInputArea%22%29%3B%0A%20%20%20%20if%20%28inputArea%20%26%26%20inputArea.style.display%20%3D%3D%3D%20%22none%22%29%20%7B%0A%20%20%20%20%20%20%20%20inputArea.style.display%20%3D%20%22block%22%3B%0A%20%20%20%20%20%20%20%20document.getElementById%28%22createButton%22%29.style.display%20%3D%20%22none%22%3B%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20if%28socket%29%0A%20%20%20%20%20%20%20%20return%3B%0A%0A%20%20%20%20room%20%3D%0A%20%20%20%20%20%20%20%20cleanRoom%28%0A%20%20%20%20%20%20%20%20%20%20%20%20roomInput.value%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20if%28%21room%29%7B%0A%0A%20%20%20%20%20%20%20%20alert%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Please%20enter%20a%20valid%20room%20key.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20isCreator%20%3D%0A%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20openApp%28%29%3B%0A%0A%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%22Joining%20room%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20room%0A%20%20%20%20%29%3B%0A%0A%20%20%20%20await%20connectToSignaling%28%29%3B%0A%7D%3B%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20SIGNALING%20CONNECTION%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Aasync%20function%20connectToSignaling%28%29%7B%0A%0A%20%20%20%20disableFileSharing%28%29%3B%0A%0A%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%22Connecting%20to%20signaling%20server...%22%2C%0A%20%20%20%20%20%20%20%20%22waiting%22%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20const%20websocketUrl%20%3D%0A%20%20%20%20%20%20%20%20WS_URL%20%2B%0A%20%20%20%20%20%20%20%20%22%3Froom%3D%22%20%2B%0A%20%20%20%20%20%20%20%20encodeURIComponent%28room%29%3B%0A%0A%0A%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%22Opening%20signaling%20connection...%22%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20socket%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20new%20WebSocket%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20websocketUrl%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%7D%0A%20%20%20%20catch%28error%29%7B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22WebSocket%20creation%20failed%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20error.message%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Unable%20to%20connect%20to%20signaling%20server%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%22error%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20socket.onopen%20%3D%0A%20%20%20%20function%28%29%7B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Connected%20to%20signaling%20server.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20Tell%20the%20Durable%20Object%20which%20room%0A%20%20%20%20%20%20%20%20%20%2A%20we%20want.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20socket.send%28%0A%20%20%20%20%20%20%20%20%20%20%20%20JSON.stringify%28%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20type%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22join%22%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20room%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20room%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%29%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20Create%20peer%20connection%20BEFORE%0A%20%20%20%20%20%20%20%20%20%2A%20peer-joined%20can%20arrive.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20createPeerConnection%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20if%28isCreator%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Room%20created%20%E2%80%A2%20Waiting%20for%20the%20other%20device...%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22waiting%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20else%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Joined%20room%20%E2%80%A2%20Waiting%20for%20connection...%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22waiting%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%3B%0A%0A%0A%20%20%20%20socket.onmessage%20%3D%0A%20%20%20%20async%20function%28event%29%7B%0A%0A%20%20%20%20%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20const%20message%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20JSON.parse%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20event.data%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Signal%20received%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20message.type%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20handleSignalMessage%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20message%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20catch%28error%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Signal%20handling%20error%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20error.message%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%3B%0A%0A%0A%20%20%20%20socket.onerror%20%3D%0A%20%20%20%20function%28%29%7B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22WebSocket%20error.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20if%28%21connected%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Signaling%20error%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22error%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%3B%0A%0A%0A%20%20%20%20socket.onclose%20%3D%0A%20%20%20%20function%28%29%7B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Signaling%20connection%20closed.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%21connected%20%26%26%0A%20%20%20%20%20%20%20%20%20%20%20%20%21leaving%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Signaling%20disconnected%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22error%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20CREATE%20RTCPeerConnection%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Afunction%20createPeerConnection%28%29%7B%0A%0A%20%20%20%20if%28peer%29%0A%20%20%20%20%20%20%20%20return%3B%0A%0A%0A%20%20%20%20peer%20%3D%0A%20%20%20%20%20%20%20%20new%20RTCPeerConnection%28%0A%20%20%20%20%20%20%20%20%20%20%20%20RTC_CONFIG%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20ICE%20candidates.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20peer.onicecandidate%20%3D%0A%20%20%20%20function%28event%29%7B%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%21event.candidate%0A%20%20%20%20%20%20%20%20%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20sendSignal%28%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20type%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22ice%22%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20candidate%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20event.candidate%0A%0A%20%20%20%20%20%20%20%20%7D%29%3B%0A%20%20%20%20%7D%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Remote%20data%20channel.%0A%20%20%20%20%20%2A%0A%20%20%20%20%20%2A%20Only%20the%20creator%20creates%20it.%0A%20%20%20%20%20%2A%20The%20receiver%20gets%20it%20here.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20peer.ondatachannel%20%3D%0A%20%20%20%20function%28event%29%7B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Data%20channel%20received.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20setupDataChannel%28%0A%20%20%20%20%20%20%20%20%20%20%20%20event.channel%0A%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%7D%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Connection%20state.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20peer.onconnectionstatechange%20%3D%0A%20%20%20%20function%28%29%7B%0A%0A%20%20%20%20%20%20%20%20const%20state%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20peer.connectionState%3B%0A%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Peer%20connection%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20state%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20state%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%22connected%22%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20connected%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20true%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20enableFileSharing%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Connected%20%E2%80%A2%20Ready%20to%20share%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22connected%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20state%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%22disconnected%22%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20connected%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20disableFileSharing%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Peer%20disconnected%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22error%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20state%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%22failed%22%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20connected%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20disableFileSharing%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Peer%20connection%20failed%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22error%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20state%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%22closed%22%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20connected%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20disableFileSharing%28%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20ICE%20state%20logging.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20peer.oniceconnectionstatechange%20%3D%0A%20%20%20%20function%28%29%7B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22ICE%20state%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20peer.iceConnectionState%0A%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%7D%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20DATA%20CHANNEL%20SETUP%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Afunction%20setupDataChannel%28channel%29%7B%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Prevent%20an%20accidental%20duplicate%20channel.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20dataChannel%20%26%26%0A%20%20%20%20%20%20%20%20dataChannel%20%21%3D%3D%20channel%20%26%26%0A%20%20%20%20%20%20%20%20dataChannel.readyState%20%21%3D%3D%0A%20%20%20%20%20%20%20%20%22closed%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20try%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20channel.close%28%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20catch%7B%7D%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20dataChannel%20%3D%0A%20%20%20%20%20%20%20%20channel%3B%0A%0A%0A%20%20%20%20dataChannel.binaryType%20%3D%0A%20%20%20%20%20%20%20%20%22arraybuffer%22%3B%0A%0A%0A%20%20%20%20dataChannel.bufferedAmountLowThreshold%20%3D%0A%20%20%20%20%20%20%20%20LOW_WATER_MARK%3B%0A%0A%0A%20%20%20%20dataChannel.onopen%20%3D%0A%20%20%20%20function%28%29%7B%0A%0A%20%20%20%20%20%20%20%20connected%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20true%3B%0A%0A%20%20%20%20%20%20%20%20enableFileSharing%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Connected%20%E2%80%A2%20Ready%20to%20share%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%22connected%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22File%20transfer%20channel%20is%20open.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%7D%3B%0A%0A%0A%20%20%20%20dataChannel.onclose%20%3D%0A%20%20%20%20function%28%29%7B%0A%0A%20%20%20%20%20%20%20%20connected%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20%20%20%20%20disableFileSharing%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22File%20transfer%20channel%20closed%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%22error%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22File%20transfer%20channel%20closed.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%7D%3B%0A%0A%0A%20%20%20%20dataChannel.onerror%20%3D%0A%20%20%20%20function%28error%29%7B%0A%0A%20%20%20%20%20%20%20%20console.error%28%0A%20%20%20%20%20%20%20%20%20%20%20%20error%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Data%20channel%20error.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%7D%3B%0A%0A%0A%20%20%20%20dataChannel.onmessage%20%3D%0A%20%20%20%20async%20function%28event%29%7B%0A%0A%20%20%20%20%20%20%20%20await%20handleDataMessage%28%0A%20%20%20%20%20%20%20%20%20%20%20%20event.data%0A%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%7D%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20SEND%20SIGNAL%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Afunction%20sendSignal%28data%29%7B%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%21socket%20%7C%7C%0A%20%20%20%20%20%20%20%20socket.readyState%20%21%3D%3D%0A%20%20%20%20%20%20%20%20WebSocket.OPEN%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Cannot%20send%20signal%3A%20WebSocket%20not%20open.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20socket.send%28%0A%20%20%20%20%20%20%20%20JSON.stringify%28%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20type%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22signal%22%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20room%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20room%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20data%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20data%0A%0A%20%20%20%20%20%20%20%20%7D%29%0A%20%20%20%20%29%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20SIGNAL%20HANDLER%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Aasync%20function%20handleSignalMessage%28%0A%20%20%20%20message%0A%29%7B%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Room%20information.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20message.type%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%22joined%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Joined%20room.%20Peers%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20message.peerCount%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20If%20creator%20somehow%20sees%20two%20peers%0A%20%20%20%20%20%20%20%20%20%2A%20in%20the%20initial%20joined%20response%2C%0A%20%20%20%20%20%20%20%20%20%2A%20start%20negotiation.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20isCreator%20%26%26%0A%20%20%20%20%20%20%20%20%20%20%20%20message.peerCount%20%3D%3D%3D%202%20%26%26%0A%20%20%20%20%20%20%20%20%20%20%20%20%21offerSent%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20peerJoined%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20true%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20createOffer%28%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Second%20device%20entered%20the%20room.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20message.type%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%22peer-joined%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Other%20device%20joined%20the%20room.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20peerJoined%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20true%3B%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20ONLY%20CREATOR%20sends%20the%20offer.%0A%20%20%20%20%20%20%20%20%20%2A%0A%20%20%20%20%20%20%20%20%20%2A%20We%20explicitly%20do%20NOT%20use%0A%20%20%20%20%20%20%20%20%20%2A%20onnegotiationneeded.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20isCreator%20%26%26%0A%20%20%20%20%20%20%20%20%20%20%20%20%21offerSent%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20createOffer%28%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Room%20full.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20message.type%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%22room-full%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Room%20is%20full%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%22error%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20alert%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22This%20room%20already%20has%20two%20devices.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Peer%20left.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20message.type%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%22peer-left%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20connected%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20%20%20%20%20peerJoined%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20%20%20%20%20offerSent%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20%20%20%20%20receivedOffer%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20%20%20%20%20disableFileSharing%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Other%20device%20left%20the%20room%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%22waiting%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Other%20device%20left.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20The%20Worker%20forwards%20our%20wrapper%3A%0A%20%20%20%20%20%2A%0A%20%20%20%20%20%2A%20%7B%0A%20%20%20%20%20%2A%20%20%20type%3A%22signal%22%2C%0A%20%20%20%20%20%2A%20%20%20room%3A%22...%22%2C%0A%20%20%20%20%20%2A%20%20%20data%3A%7B...%7D%0A%20%20%20%20%20%2A%20%7D%0A%20%20%20%20%20%2A%0A%20%20%20%20%20%2A%20Unwrap%20it.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20message.type%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%22signal%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%21message.data%0A%20%20%20%20%20%20%20%20%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20message%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20message.data%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20%20%20OFFER%0A%20%20%20%20%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20message.type%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%22offer%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20const%20description%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20message.description%20%7C%7C%0A%20%20%20%20%20%20%20%20%20%20%20%20message.offer%3B%0A%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%21description%0A%20%20%20%20%20%20%20%20%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20Receiver%20should%20only%20accept%20ONE%20offer.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20receivedOffer%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Duplicate%20offer%20ignored.%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20If%20this%20isn%27t%20the%20receiver%2C%0A%20%20%20%20%20%20%20%20%20%2A%20ignore%20it.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20isCreator%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Creator%20ignored%20incoming%20offer.%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20We%20must%20be%20stable%20before%20accepting%0A%20%20%20%20%20%20%20%20%20%2A%20the%20first%20offer.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20peer.signalingState%20%21%3D%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%22stable%22%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Offer%20ignored%20because%20peer%20state%20is%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20peer.signalingState%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20receivedOffer%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20true%3B%0A%0A%0A%20%20%20%20%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20peer.setRemoteDescription%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20description%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20flushPendingCandidates%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20const%20answer%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20await%20peer.createAnswer%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20peer.setLocalDescription%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20answer%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20sendSignal%28%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20type%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22answer%22%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20description%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20peer.localDescription%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Answer%20sent.%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20catch%28error%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20receivedOffer%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20false%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Offer%20error%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20error.message%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20%20%20ANSWER%0A%20%20%20%20%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20message.type%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%22answer%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20const%20description%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20message.description%20%7C%7C%0A%20%20%20%20%20%20%20%20%20%20%20%20message.answer%3B%0A%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%21description%0A%20%20%20%20%20%20%20%20%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20ONLY%20creator%20should%20receive%20the%20answer.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%21isCreator%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Receiver%20ignored%20incoming%20answer.%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20This%20check%20is%20the%20main%20protection%0A%20%20%20%20%20%20%20%20%20%2A%20against%3A%0A%20%20%20%20%20%20%20%20%20%2A%0A%20%20%20%20%20%20%20%20%20%2A%20Called%20in%20wrong%20state%3A%20stable%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20peer.signalingState%20%21%3D%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%22have-local-offer%22%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Duplicate/stale%20answer%20ignored.%20State%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20peer.signalingState%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20peer.setRemoteDescription%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20description%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20flushPendingCandidates%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Answer%20accepted.%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20catch%28error%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Answer%20error%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20error.message%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20%20%20ICE%0A%20%20%20%20%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20message.type%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%22ice%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%21message.candidate%0A%20%20%20%20%20%20%20%20%29%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20If%20remote%20SDP%20isn%27t%20installed%20yet%2C%0A%20%20%20%20%20%20%20%20%20%2A%20queue%20the%20candidate.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%21peer.remoteDescription%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20pendingCandidates.push%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20message.candidate%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20peer.addIceCandidate%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20message.candidate%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20catch%28error%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22ICE%20candidate%20error%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20error.message%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20CREATE%20OFFER%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Aasync%20function%20createOffer%28%29%7B%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Only%20creator.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%21isCreator%29%0A%20%20%20%20%20%20%20%20return%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Must%20have%20second%20peer.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%21peerJoined%29%0A%20%20%20%20%20%20%20%20return%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Never%20create%20second%20offer.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28offerSent%29%0A%20%20%20%20%20%20%20%20return%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Must%20be%20stable.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20peer.signalingState%20%21%3D%3D%0A%20%20%20%20%20%20%20%20%22stable%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Cannot%20create%20offer.%20Current%20state%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20peer.signalingState%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Prevent%20duplicate%20calls.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20offerSent%20%3D%0A%20%20%20%20%20%20%20%20true%3B%0A%0A%0A%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20Creator%20creates%20the%20ONLY%20data%20channel.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%21dataChannel%20%7C%7C%0A%20%20%20%20%20%20%20%20%20%20%20%20dataChannel.readyState%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%22closed%22%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20const%20channel%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20peer.createDataChannel%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22files%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20ordered%3Atrue%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20setupDataChannel%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20channel%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20Give%20the%20browser%20a%20tiny%20amount%20of%20time%0A%20%20%20%20%20%20%20%20%20%2A%20to%20register%20the%20DataChannel.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20await%20wait%28100%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20Create%20exactly%20one%20offer.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20const%20offer%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20peer.createOffer%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20await%20peer.setLocalDescription%28%0A%20%20%20%20%20%20%20%20%20%20%20%20offer%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20Send%20offer.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20sendSignal%28%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20type%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22offer%22%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20description%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20peer.localDescription%0A%0A%20%20%20%20%20%20%20%20%7D%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Offer%20sent.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%7D%0A%20%20%20%20catch%28error%29%7B%0A%0A%20%20%20%20%20%20%20%20offerSent%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20false%3B%0A%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Offer%20creation%20error%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20error.message%0A%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%7D%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20WAIT%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Afunction%20wait%28ms%29%7B%0A%0A%20%20%20%20return%20new%20Promise%28%0A%20%20%20%20%20%20%20%20resolve%20%3D%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20setTimeout%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20resolve%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20ms%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%0A%20%20%20%20%29%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20FLUSH%20ICE%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Aasync%20function%20flushPendingCandidates%28%29%7B%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%21peer.remoteDescription%0A%20%20%20%20%29%7B%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20const%20list%20%3D%0A%20%20%20%20%20%20%20%20pendingCandidates.splice%28%0A%20%20%20%20%20%20%20%20%20%20%20%200%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20for%28%0A%20%20%20%20%20%20%20%20const%20candidate%20of%0A%20%20%20%20%20%20%20%20list%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20peer.addIceCandidate%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20candidate%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20catch%28error%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Queued%20ICE%20error%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20error.message%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20FILE%20PICKER%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0AfileInput.onchange%20%3D%0Afunction%28event%29%7B%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%21connected%20%7C%7C%0A%20%20%20%20%20%20%20%20%21dataChannel%20%7C%7C%0A%20%20%20%20%20%20%20%20dataChannel.readyState%20%21%3D%3D%0A%20%20%20%20%20%20%20%20%22open%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20alert%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Wait%20until%20both%20devices%20show%20Connected.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20const%20files%20%3D%0A%20%20%20%20%20%20%20%20%5B...event.target.files%5D%3B%0A%0A%0A%20%20%20%20sendFiles%28%0A%20%20%20%20%20%20%20%20files%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20fileInput.value%20%3D%0A%20%20%20%20%20%20%20%20%22%22%3B%0A%7D%3B%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20DRAG%20AND%20DROP%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0AdropZone.ondragover%20%3D%0Afunction%28event%29%7B%0A%0A%20%20%20%20event.preventDefault%28%29%3B%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%21connected%0A%20%20%20%20%29%7B%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20dropZone.classList.add%28%0A%20%20%20%20%20%20%20%20%22drag%22%0A%20%20%20%20%29%3B%0A%7D%3B%0A%0A%0AdropZone.ondragleave%20%3D%0Afunction%28%29%7B%0A%0A%20%20%20%20dropZone.classList.remove%28%0A%20%20%20%20%20%20%20%20%22drag%22%0A%20%20%20%20%29%3B%0A%7D%3B%0A%0A%0AdropZone.ondrop%20%3D%0Afunction%28event%29%7B%0A%0A%20%20%20%20event.preventDefault%28%29%3B%0A%0A%20%20%20%20dropZone.classList.remove%28%0A%20%20%20%20%20%20%20%20%22drag%22%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%21connected%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20alert%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Wait%20until%20both%20devices%20are%20connected.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20const%20files%20%3D%0A%20%20%20%20%20%20%20%20%5B...event.dataTransfer.files%5D%3B%0A%0A%0A%20%20%20%20sendFiles%28%0A%20%20%20%20%20%20%20%20files%0A%20%20%20%20%29%3B%0A%7D%3B%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20TRANSFER%20UI%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Afunction%20createTransferUI%28%0A%20%20%20%20name%2C%0A%20%20%20%20size%0A%29%7B%0A%0A%20%20%20%20const%20element%20%3D%0A%20%20%20%20%20%20%20%20document.createElement%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22div%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20element.className%20%3D%0A%20%20%20%20%20%20%20%20%22transfer%22%3B%0A%0A%0A%20%20%20%20element.innerHTML%20%3D%20%60%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22transferTop%22%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22filename%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%24%7BescapeHtml%28name%29%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22filemeta%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%24%7BformatBytes%28size%29%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cstrong%20class%3D%22percent%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%200%25%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/strong%3E%0A%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22progress%22%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cdiv%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20class%3D%22progressBar%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%3E%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%0A%20%20%20%20%20%20%20%20%3Cdiv%20class%3D%22transferBottom%22%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cspan%20class%3D%22speed%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Waiting...%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/span%3E%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Cspan%20class%3D%22count%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%200%20B%20/%20%24%7BformatBytes%28size%29%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%3C/span%3E%0A%0A%20%20%20%20%20%20%20%20%3C/div%3E%0A%20%20%20%20%60%3B%0A%0A%0A%20%20%20%20transfers.prepend%28%0A%20%20%20%20%20%20%20%20element%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20return%20element%3B%0A%7D%0A%0A%0Afunction%20updateTransfer%28%0A%20%20%20%20element%2C%0A%20%20%20%20percent%2C%0A%20%20%20%20transferred%2C%0A%20%20%20%20total%2C%0A%20%20%20%20currentSpeed%2C%0A%20%20%20%20complete%20%3D%20false%0A%29%7B%0A%0A%20%20%20%20const%20bar%20%3D%0A%20%20%20%20%20%20%20%20element.querySelector%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22.progressBar%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20const%20percentage%20%3D%0A%20%20%20%20%20%20%20%20element.querySelector%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22.percent%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20const%20speedElement%20%3D%0A%20%20%20%20%20%20%20%20element.querySelector%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22.speed%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20const%20count%20%3D%0A%20%20%20%20%20%20%20%20element.querySelector%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22.count%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20bar.style.width%20%3D%0A%20%20%20%20%20%20%20%20percent%20%2B%20%22%25%22%3B%0A%0A%0A%20%20%20%20percentage.textContent%20%3D%0A%20%20%20%20%20%20%20%20Math.round%28percent%29%20%2B%20%22%25%22%3B%0A%0A%0A%20%20%20%20count.textContent%20%3D%0A%20%20%20%20%20%20%20%20formatBytes%28%0A%20%20%20%20%20%20%20%20%20%20%20%20transferred%0A%20%20%20%20%20%20%20%20%29%20%2B%0A%20%20%20%20%20%20%20%20%22%20/%20%22%20%2B%0A%20%20%20%20%20%20%20%20formatBytes%28%0A%20%20%20%20%20%20%20%20%20%20%20%20total%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20speedElement.textContent%20%3D%0A%20%20%20%20%20%20%20%20complete%0A%20%20%20%20%20%20%20%20%20%20%20%20%3F%20%22Complete%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%3A%20currentSpeed%20%3E%200%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3F%20formatSpeed%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20currentSpeed%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3A%20%22Transferring...%22%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20SEND%20FILES%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Aasync%20function%20sendFiles%28files%29%7B%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%21connected%20%7C%7C%0A%20%20%20%20%20%20%20%20%21dataChannel%20%7C%7C%0A%20%20%20%20%20%20%20%20dataChannel.readyState%20%21%3D%3D%0A%20%20%20%20%20%20%20%20%22open%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20alert%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22The%20other%20device%20is%20not%20connected%20yet.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20for%28%0A%20%20%20%20%20%20%20%20const%20file%20of%0A%20%20%20%20%20%20%20%20files%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20await%20sendFile%28%0A%20%20%20%20%20%20%20%20%20%20%20%20file%0A%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%7D%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20SEND%20FILE%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Aasync%20function%20sendFile%28file%29%7B%0A%0A%20%20%20%20const%20ui%20%3D%0A%20%20%20%20%20%20%20%20createTransferUI%28%0A%20%20%20%20%20%20%20%20%20%20%20%20file.name%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20file.size%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20const%20startTime%20%3D%0A%20%20%20%20%20%20%20%20performance.now%28%29%3B%0A%0A%0A%20%20%20%20let%20offset%20%3D%0A%20%20%20%20%20%20%20%200%3B%0A%0A%0A%20%20%20%20let%20lastUpdate%20%3D%0A%20%20%20%20%20%20%20%20performance.now%28%29%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20File%20metadata.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20dataChannel.send%28%0A%20%20%20%20%20%20%20%20JSON.stringify%28%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20type%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22file-start%22%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20name%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20file.name%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20size%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20file.size%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20mime%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20file.type%20%7C%7C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22application/octet-stream%22%0A%0A%20%20%20%20%20%20%20%20%7D%29%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Send%20chunks.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20while%28%0A%20%20%20%20%20%20%20%20offset%20%3C%0A%20%20%20%20%20%20%20%20file.size%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20Don%27t%20overflow%20browser%20memory.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20dataChannel.bufferedAmount%20%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20HIGH_WATER_MARK%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20waitForBuffer%28%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20const%20chunk%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20file.slice%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20offset%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20offset%20%2B%20CHUNK_SIZE%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20const%20buffer%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20chunk.arrayBuffer%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20dataChannel.send%28%0A%20%20%20%20%20%20%20%20%20%20%20%20buffer%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20offset%20%2B%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20buffer.byteLength%3B%0A%0A%0A%20%20%20%20%20%20%20%20const%20now%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20performance.now%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20now%20-%0A%20%20%20%20%20%20%20%20%20%20%20%20lastUpdate%20%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20100%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20const%20elapsed%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20now%20-%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20startTime%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29%20/%201000%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20const%20currentSpeed%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20elapsed%20%3E%200%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3F%20offset%20/%20elapsed%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3A%200%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20const%20percent%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20file.size%20%3D%3D%3D%200%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3F%20100%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%3A%20%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20offset%20/%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20file.size%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29%20%2A%20100%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20updateTransfer%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20ui%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20percent%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20offset%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20file.size%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20currentSpeed%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20lastUpdate%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20now%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Tell%20receiver%20the%20file%20is%20complete.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20dataChannel.send%28%0A%20%20%20%20%20%20%20%20JSON.stringify%28%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20type%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22file-end%22%0A%0A%20%20%20%20%20%20%20%20%7D%29%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20updateTransfer%28%0A%20%20%20%20%20%20%20%20ui%2C%0A%20%20%20%20%20%20%20%20100%2C%0A%20%20%20%20%20%20%20%20file.size%2C%0A%20%20%20%20%20%20%20%20file.size%2C%0A%20%20%20%20%20%20%20%200%2C%0A%20%20%20%20%20%20%20%20true%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%22File%20sent%20successfully%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20file.name%0A%20%20%20%20%29%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20WAIT%20FOR%20BUFFER%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Afunction%20waitForBuffer%28%29%7B%0A%0A%20%20%20%20return%20new%20Promise%28%0A%20%20%20%20%20%20%20%20resolve%20%3D%3E%20%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%21dataChannel%20%7C%7C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20dataChannel.readyState%20%21%3D%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22open%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20resolve%28%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20const%20check%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20function%28%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%21dataChannel%20%7C%7C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20dataChannel.readyState%20%21%3D%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22open%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20resolve%28%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20dataChannel.bufferedAmount%20%3C%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20LOW_WATER_MARK%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20resolve%28%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20setTimeout%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20check%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%2030%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20check%28%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%29%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20RECEIVE%20DATA%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Aasync%20function%20handleDataMessage%28%0A%20%20%20%20data%0A%29%7B%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Control%20messages%20are%20text.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20typeof%20data%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%22string%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20let%20message%3B%0A%0A%0A%20%20%20%20%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20message%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20JSON.parse%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20data%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20catch%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20New%20file.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20message.type%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%22file-start%22%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20const%20ui%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20createTransferUI%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20message.name%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20message.size%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20incomingFile%20%3D%20%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20name%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20message.name%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20size%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20message.size%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20mime%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20message.mime%20%7C%7C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22application/octet-stream%22%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20chunks%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B%5D%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20received%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%200%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20started%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20performance.now%28%29%2C%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20ui%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20ui%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Receiving%20file%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20message.name%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20/%2A%0A%20%20%20%20%20%20%20%20%20%2A%20Finished%20file.%0A%20%20%20%20%20%20%20%20%20%2A/%0A%0A%20%20%20%20%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%20%20%20%20message.type%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%22file-end%22%0A%20%20%20%20%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20finishIncomingFile%28%29%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%20%20%20%20%7D%0A%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Binary%20chunk.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20data%20instanceof%20ArrayBuffer%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20receiveChunk%28%0A%20%20%20%20%20%20%20%20%20%20%20%20data%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Blob%20fallback.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20data%20instanceof%20Blob%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20const%20buffer%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20await%20data.arrayBuffer%28%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20receiveChunk%28%0A%20%20%20%20%20%20%20%20%20%20%20%20buffer%0A%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%7D%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20RECEIVE%20CHUNK%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Afunction%20receiveChunk%28%0A%20%20%20%20buffer%0A%29%7B%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%21incomingFile%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20incomingFile.chunks.push%28%0A%20%20%20%20%20%20%20%20buffer%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20incomingFile.received%20%2B%3D%0A%20%20%20%20%20%20%20%20buffer.byteLength%3B%0A%0A%0A%20%20%20%20const%20elapsed%20%3D%0A%20%20%20%20%20%20%20%20%28%0A%20%20%20%20%20%20%20%20%20%20%20%20performance.now%28%29%20-%0A%20%20%20%20%20%20%20%20%20%20%20%20incomingFile.started%0A%20%20%20%20%20%20%20%20%29%20/%201000%3B%0A%0A%0A%20%20%20%20const%20currentSpeed%20%3D%0A%20%20%20%20%20%20%20%20elapsed%20%3E%200%0A%20%20%20%20%20%20%20%20%20%20%20%20%3F%20incomingFile.received%20/%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20elapsed%0A%20%20%20%20%20%20%20%20%20%20%20%20%3A%200%3B%0A%0A%0A%20%20%20%20const%20percent%20%3D%0A%20%20%20%20%20%20%20%20incomingFile.size%20%3D%3D%3D%200%0A%20%20%20%20%20%20%20%20%20%20%20%20%3F%20100%0A%20%20%20%20%20%20%20%20%20%20%20%20%3A%20%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20incomingFile.received%20/%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20incomingFile.size%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%20%2A%20100%3B%0A%0A%0A%20%20%20%20updateTransfer%28%0A%20%20%20%20%20%20%20%20incomingFile.ui%2C%0A%20%20%20%20%20%20%20%20percent%2C%0A%20%20%20%20%20%20%20%20incomingFile.received%2C%0A%20%20%20%20%20%20%20%20incomingFile.size%2C%0A%20%20%20%20%20%20%20%20currentSpeed%0A%20%20%20%20%29%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20FINISH%20RECEIVED%20FILE%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0Afunction%20finishIncomingFile%28%29%7B%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20%21incomingFile%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Verify%20the%20size.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20incomingFile.received%20%21%3D%3D%0A%20%20%20%20%20%20%20%20incomingFile.size%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22ERROR%3A%20Received%20size%20does%20not%20match.%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20incomingFile%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20null%3B%0A%0A%0A%20%20%20%20%20%20%20%20return%3B%0A%20%20%20%20%7D%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Build%20Blob.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20const%20blob%20%3D%0A%20%20%20%20%20%20%20%20new%20Blob%28%0A%20%20%20%20%20%20%20%20%20%20%20%20incomingFile.chunks%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20type%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20incomingFile.mime%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Create%20persistent%20object%20URL.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20const%20url%20%3D%0A%20%20%20%20%20%20%20%20URL.createObjectURL%28%0A%20%20%20%20%20%20%20%20%20%20%20%20blob%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20const%20name%20%3D%0A%20%20%20%20%20%20%20%20incomingFile.name%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Create%20real%20download%20link.%0A%20%20%20%20%20%2A%0A%20%20%20%20%20%2A%20This%20is%20much%20more%20reliable%20than%20only%0A%20%20%20%20%20%2A%20calling%20link.click%28%29.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20const%20downloadLink%20%3D%0A%20%20%20%20%20%20%20%20document.createElement%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22a%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20downloadLink.className%20%3D%0A%20%20%20%20%20%20%20%20%22downloadLink%22%3B%0A%0A%0A%20%20%20%20downloadLink.href%20%3D%0A%20%20%20%20%20%20%20%20url%3B%0A%0A%0A%20%20%20%20downloadLink.download%20%3D%0A%20%20%20%20%20%20%20%20name%3B%0A%0A%0A%20%20%20%20downloadLink.rel%20%3D%0A%20%20%20%20%20%20%20%20%22noopener%22%3B%0A%0A%0A%20%20%20%20downloadLink.textContent%20%3D%0A%20%20%20%20%20%20%20%20%22%E2%AC%87%20Download%20File%22%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Open%20fallback.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20const%20openLink%20%3D%0A%20%20%20%20%20%20%20%20document.createElement%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22a%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20openLink.className%20%3D%0A%20%20%20%20%20%20%20%20%22openLink%22%3B%0A%0A%0A%20%20%20%20openLink.href%20%3D%0A%20%20%20%20%20%20%20%20url%3B%0A%0A%0A%20%20%20%20openLink.target%20%3D%0A%20%20%20%20%20%20%20%20%22_blank%22%3B%0A%0A%0A%20%20%20%20openLink.rel%20%3D%0A%20%20%20%20%20%20%20%20%22noopener%22%3B%0A%0A%0A%20%20%20%20openLink.textContent%20%3D%0A%20%20%20%20%20%20%20%20%22%E2%86%97%20Open%20File%22%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Button%20area.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20const%20downloadArea%20%3D%0A%20%20%20%20%20%20%20%20document.createElement%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22div%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20downloadArea.className%20%3D%0A%20%20%20%20%20%20%20%20%22downloadArea%22%3B%0A%0A%0A%20%20%20%20downloadArea.appendChild%28%0A%20%20%20%20%20%20%20%20downloadLink%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20downloadArea.appendChild%28%0A%20%20%20%20%20%20%20%20openLink%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Mobile%20instructions.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20const%20info%20%3D%0A%20%20%20%20%20%20%20%20document.createElement%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22div%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20info.className%20%3D%0A%20%20%20%20%20%20%20%20%22info%22%3B%0A%0A%0A%20%20%20%20info.textContent%20%3D%0A%20%20%20%20%20%20%20%20%22On%20iPhone/iPad%2C%20use%20Open%20File%20if%20Download%20File%20does%20not%20save%20automatically.%20From%20the%20opened%20file%2C%20use%20Share%20%E2%86%92%20Save%20to%20Files.%22%3B%0A%20%20%20%20%0A%0A%20%20%20%20downloadArea.appendChild%28%0A%20%20%20%20%20%20%20%20info%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20incomingFile.ui.appendChild%28%0A%20%20%20%20%20%20%20%20downloadArea%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20updateTransfer%28%0A%20%20%20%20%20%20%20%20incomingFile.ui%2C%0A%20%20%20%20%20%20%20%20100%2C%0A%20%20%20%20%20%20%20%20incomingFile.size%2C%0A%20%20%20%20%20%20%20%20incomingFile.size%2C%0A%20%20%20%20%20%20%20%200%2C%0A%20%20%20%20%20%20%20%20true%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20log%28%0A%20%20%20%20%20%20%20%20%22File%20received%20successfully%3A%20%22%20%2B%0A%20%20%20%20%20%20%20%20name%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20/%2A%0A%20%20%20%20%20%2A%20Keep%20the%20object%20URL%20alive%20for%2030%20minutes.%0A%20%20%20%20%20%2A/%0A%0A%20%20%20%20setTimeout%28%0A%20%20%20%20%20%20%20%20function%28%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20URL.revokeObjectURL%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20url%0A%20%20%20%20%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%2030%20%2A%2060%20%2A%201000%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20incomingFile%20%3D%0A%20%20%20%20%20%20%20%20null%3B%0A%7D%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20COPY%20ROOM%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0AcopyButton.onclick%20%3D%0Aasync%20function%28%29%7B%0A%0A%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20await%20navigator.clipboard.writeText%28%0A%20%20%20%20%20%20%20%20%20%20%20%20room%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20%20%20%20%20copyButton.textContent%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Copied%21%22%3B%0A%0A%0A%20%20%20%20%20%20%20%20setTimeout%28%0A%20%20%20%20%20%20%20%20%20%20%20%20function%28%29%7B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20copyButton.textContent%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%22Copy%22%3B%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%201200%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%20%20%20%20%7D%0A%20%20%20%20catch%7B%0A%0A%20%20%20%20%20%20%20%20prompt%28%0A%20%20%20%20%20%20%20%20%20%20%20%20%22Copy%20this%20room%20key%3A%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20room%0A%20%20%20%20%20%20%20%20%29%3B%0A%20%20%20%20%7D%0A%7D%3B%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20LEAVE%20ROOM%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0AleaveButton.onclick%20%3D%0Afunction%28%29%7B%0A%0A%20%20%20%20leaving%20%3D%0A%20%20%20%20%20%20%20%20true%3B%0A%0A%0A%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20if%28dataChannel%29%0A%20%20%20%20%20%20%20%20%20%20%20%20dataChannel.close%28%29%3B%0A%0A%20%20%20%20%7D%0A%20%20%20%20catch%7B%7D%0A%0A%0A%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20if%28peer%29%0A%20%20%20%20%20%20%20%20%20%20%20%20peer.close%28%29%3B%0A%0A%20%20%20%20%7D%0A%20%20%20%20catch%7B%7D%0A%0A%0A%20%20%20%20try%7B%0A%0A%20%20%20%20%20%20%20%20if%28socket%29%0A%20%20%20%20%20%20%20%20%20%20%20%20socket.close%28%29%3B%0A%0A%20%20%20%20%7D%0A%20%20%20%20catch%7B%7D%0A%0A%0A%20%20%20%20dataChannel%20%3D%0A%20%20%20%20%20%20%20%20null%3B%0A%0A%20%20%20%20peer%20%3D%0A%20%20%20%20%20%20%20%20null%3B%0A%0A%20%20%20%20socket%20%3D%0A%20%20%20%20%20%20%20%20null%3B%0A%0A%20%20%20%20peerJoined%20%3D%0A%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20offerSent%20%3D%0A%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20receivedOffer%20%3D%0A%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20connected%20%3D%0A%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20pendingCandidates%20%3D%0A%20%20%20%20%20%20%20%20%5B%5D%3B%0A%0A%20%20%20%20incomingFile%20%3D%0A%20%20%20%20%20%20%20%20null%3B%0A%0A%20%20%20%20room%20%3D%0A%20%20%20%20%20%20%20%20%22%22%3B%0A%0A%20%20%20%20isCreator%20%3D%0A%20%20%20%20%20%20%20%20false%3B%0A%0A%20%20%20%20transfers.innerHTML%20%3D%0A%20%20%20%20%20%20%20%20%22%22%3B%0A%0A%20%20%20%20logs.textContent%20%3D%0A%20%20%20%20%20%20%20%20%22%22%3B%0A%0A%20%20%20%20roomInput.value%20%3D%0A%20%20%20%20%20%20%20%20%22%22%3B%0A%0A%20%20%20%20disableFileSharing%28%29%3B%0A%0A%20%20%20%20openJoin%28%29%3B%0A%0A%20%20%20%20setStatus%28%0A%20%20%20%20%20%20%20%20%22Disconnected%22%2C%0A%20%20%20%20%20%20%20%20%22waiting%22%0A%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20leaving%20%3D%0A%20%20%20%20%20%20%20%20false%3B%0A%7D%3B%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20ENTER%20KEY%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0AroomInput.onkeydown%20%3D%0Afunction%28event%29%7B%0A%0A%20%20%20%20if%28%0A%20%20%20%20%20%20%20%20event.key%20%3D%3D%3D%0A%20%20%20%20%20%20%20%20%22Enter%22%0A%20%20%20%20%29%7B%0A%0A%20%20%20%20%20%20%20%20joinButton.click%28%29%3B%0A%20%20%20%20%7D%0A%7D%3B%0A%0A%0A/%2A%20%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%0A%20%20%20OPTIONAL%20ROOM%20FROM%20URL%0A%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%20%2A/%0A%0A%28function%28%29%7B%0A%0A%20%20%20%20const%20params%20%3D%0A%20%20%20%20%20%20%20%20new%20URLSearchParams%28%0A%20%20%20%20%20%20%20%20%20%20%20%20window.location.search%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20const%20existingRoom%20%3D%0A%20%20%20%20%20%20%20%20cleanRoom%28%0A%20%20%20%20%20%20%20%20%20%20%20%20params.get%28%22room%22%29%20%7C%7C%20%22%22%0A%20%20%20%20%20%20%20%20%29%3B%0A%0A%0A%20%20%20%20if%28existingRoom%29%7B%0A%0A%20%20%20%20%20%20%20%20roomInput.value%20%3D%0A%20%20%20%20%20%20%20%20%20%20%20%20existingRoom%3B%0A%20%20%20%20%7D%0A%0A%7D%29%28%29%3B%0A%0A%0A%7D%29%28%29%3B%0A%3C/script%3E%0A%0A%3C/body%3E%0A%3C/html%3E%0A");
+    document.open();
+    document.write(html);
+    document.close();
+}
+</script>
+
+</body>
+</html>
