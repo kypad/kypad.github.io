@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickDrop - P2P File Sharing</title>
+  <link rel="stylesheet" href="css/transfer.css">
+</head>
+
+<body>
+  <!-- Back button returning to Shared Clipboard -->
+  <button onclick="window.location.href='index.html'" class="btn secondary" style="position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 13px;">
+    ← Back
+  </button>
+
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        ⚡
+      </div>
+
+      <h1>
+        QuickDrop
+      </h1>
+
+      <div class="subtitle">
+        Powered by kypad
+      </div>
+    </div>
+
+    <!-- ==================================================
+         JOIN PAGE
+    =================================================== -->
+    <div id="joinPage" class="card">
+      <div class="title">
+        Connect devices
+      </div>
+
+      <div id="joinInputArea" style="display: none; margin-bottom: 12px;">
+        <label class="label">
+          Room key
+        </label>
+        <input
+          id="roomInput"
+          class="input"
+          maxlength="16"
+          autocomplete="off"
+          placeholder="Example: X6U8X6"
+        >
+      </div>
+
+      <div class="row">
+        <button id="createButton" class="btn primary">
+          Create Room
+        </button>
+
+        <button id="joinButton" class="btn secondary">
+          Join Room
+        </button>
+      </div>
+
+      <div class="notice">
+        Enter the same room key on both devices.
+        After the connection is established, files are
+        transferred directly between the browsers.
+      </div>
+    </div>
+
+    <!-- ==================================================
+         APP PAGE
+    =================================================== -->
+    <div id="appPage" class="card hidden">
+      <div class="room">
+        <div>
+          <div class="roomLabel">
+            ROOM KEY
+          </div>
+          <div id="roomCode" class="roomCode"></div>
+        </div>
+
+        <button id="copyButton" class="btn secondary copy">
+          Copy
+        </button>
+      </div>
+
+      <div class="status">
+        <span id="statusDot" class="dot waiting"></span>
+        <span id="statusText">Connecting...</span>
+      </div>
+
+      <label id="dropZone" class="drop disabled" for="fileInput">
+        <input id="fileInput" class="fileInput" type="file" multiple>
+        <div>
+          <div class="dropIcon">
+            📁
+          </div>
+          <div class="dropTitle">
+            Click to select files
+          </div>
+          <div class="dropText">
+            or drag & drop files here
+          </div>
+        </div>
+      </label>
+
+      <div class="connectionInfo">
+        Signaling:
+        <strong id="signalingNode">
+          Cloudflare Edge Signaling (Encrypted) 🔒
+        </strong>
+        <br>
+        File transfer:
+        <strong>
+          WebRTC End-to-End Encrypted (P2P)
+        </strong>
+      </div>
+
+      <div class="section">
+        <div class="sectionTitle">
+          Transfers
+        </div>
+        <div id="transfers"></div>
+      </div>
+
+      <div class="section">
+        <div class="sectionTitle">
+          Connection log
+        </div>
+        <div id="logs" class="logs"></div>
+      </div>
+
+      <div style="height: 12px"></div>
+
+      <button id="leaveButton" class="btn danger">
+        Leave Room
+      </button>
+    </div>
+
+    <div class="footer">
+      QuickDrop • No server-side file storage
+    </div>
+  </div>
+
+  <!-- Encrypted Security Vault and QuickDrop Module -->
+  <script src="js/vault-payload.js"></script>
+  <script src="js/security.js"></script>
+  <script src="js/transfer.js"></script>
+</body>
+</html>
