@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuickDrop - P2P File Sharing</title>
+  <title>QuickDrop - Cross-Network File Sharing</title>
   <link rel="stylesheet" href="css/transfer.css">
 </head>
 
 <body>
   <!-- Back button returning to Shared Clipboard -->
-  <button onclick="window.location.href='index.html'" class="btn secondary" style="position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 13px;">
+  <button onclick="window.location.href='index.html'" class="btn secondary" style="position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 13px; z-index: 10;">
     ← Back
   </button>
 
@@ -24,7 +24,7 @@
       </h1>
 
       <div class="subtitle">
-        Powered by kypad
+        Universal Cross-Network File Transfer • Powered by kypad
       </div>
     </div>
 
@@ -61,8 +61,8 @@
 
       <div class="notice">
         Enter the same room key on both devices.
-        After the connection is established, files are
-        transferred directly between the browsers.
+        Works across <strong>any network</strong>: mobile hotspots, Wi-Fi, and cellular data (4G/5G).
+        Files transfer directly and securely between browsers.
       </div>
     </div>
 
@@ -78,14 +78,28 @@
           <div id="roomCode" class="roomCode"></div>
         </div>
 
-        <button id="copyButton" class="btn secondary copy">
-          Copy
-        </button>
+        <div class="roomActions">
+          <button id="copyButton" class="btn secondary copy" title="Copy Room Key">
+            Copy Key
+          </button>
+          <button id="copyLinkButton" class="btn secondary copy" title="Copy Shareable Link">
+            Copy Link
+          </button>
+          <button id="qrButton" class="btn secondary copy" title="Scan with Phone Camera">
+            QR Code
+          </button>
+        </div>
+      </div>
+
+      <div id="qrCard" class="qrCard hidden">
+        <img id="qrImg" class="qrImg" alt="Room QR Code" width="160" height="160">
+        <div class="qrHint">Scan with your phone camera to connect instantly</div>
       </div>
 
       <div class="status">
         <span id="statusDot" class="dot waiting"></span>
         <span id="statusText">Connecting...</span>
+        <span id="transportBadge" class="transportBadge hidden">Connecting...</span>
       </div>
 
       <label id="dropZone" class="drop disabled" for="fileInput">
@@ -104,15 +118,9 @@
       </label>
 
       <div class="connectionInfo">
-        Signaling:
-        <strong id="signalingNode">
-          Cloudflare Edge Signaling (Encrypted) 🔒
-        </strong>
-        <br>
-        File transfer:
-        <strong>
-          WebRTC End-to-End Encrypted (P2P)
-        </strong>
+        <div>Network compatibility: <strong>Any network (Hotspots, Wi-Fi, 4G/5G, Cross-Network)</strong></div>
+        <div>Signaling: <strong id="signalingNode">Cloudflare Edge (Encrypted TLS 1.3) 🔒</strong></div>
+        <div>Transfer engine: <strong id="transferEngineNode">Hybrid P2P + Edge Relay</strong></div>
       </div>
 
       <div class="section">
@@ -137,7 +145,7 @@
     </div>
 
     <div class="footer">
-      QuickDrop • No server-side file storage
+      QuickDrop • End-to-End Encrypted • No server-side file storage
     </div>
   </div>
 
