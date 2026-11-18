@@ -1,2629 +1,1140 @@
 /**
- * Kypad QuickDrop P2P File Transfer Module
- * Connects securely to Cloudflare Edge Signaling via SecurityVault
- * WebRTC DataChannel peer-to-peer file transfer engine
+ * QuickDrop - Universal Cross-Network File Transfer Engine
+ * Powered by Kypad Hybrid Multi-Transport Architecture
+ * 
+ * Features:
+ * - Direct WebRTC P2P DataChannel (fastest for LAN / local Wi-Fi)
+ * - Cloudflare Edge Relay Fail-Safe (guaranteed transfer across mobile hotspots,
+ *   different cellular carriers, corporate/university firewalls, and symmetric NAT)
+ * - Zero-Configuration Seamless Fallback: Transfer is instantly ready upon joining
+ * - Screen WakeLock API for mobile devices
+ * - Keep-alive Heartbeat preventing mobile carrier TCP timeouts
+ * - Chunk-level backpressure control
+ * - One-click Shareable Link & QR Code generator for effortless mobile pairing
+ * - Instant auto-join via URL query parameter (?room=...)
  */
 (() => {
-"use strict";
-
-let WS_URL = "";
-let RTC_CONFIG = null;
-
-async function ensureQuickDropSecurity() {
-    if (WS_URL && RTC_CONFIG) return true;
-    try {
-        const config = await window.SecurityVault.getQuickDropConfig();
-        WS_URL = config.wsUrl;
-        RTC_CONFIG = config.rtcConfig;
-        return true;
-    } catch (err) {
-        console.error("Security Vault decryption failed:", err);
-        return false;
-    }
-}
-
-/*
- * File chunks.
- */
-const CHUNK_SIZE = 64 * 1024;
-
-/*
- * DataChannel backpressure.
- */
-const HIGH_WATER_MARK = CHUNK_SIZE * 16;
-const LOW_WATER_MARK = CHUNK_SIZE * 8;
-
-
-/* ==========================================================
-   DOM
-========================================================== */
-
-const joinPage =
-    document.getElementById(
-        "joinPage"
-    );
-
-const appPage =
-    document.getElementById(
-        "appPage"
-    );
-
-const roomInput =
-    document.getElementById(
-        "roomInput"
-    );
-
-const createButton =
-    document.getElementById(
-        "createButton"
-    );
-
-const joinButton =
-    document.getElementById(
-        "joinButton"
-    );
-
-const roomCode =
-    document.getElementById(
-        "roomCode"
-    );
-
-const copyButton =
-    document.getElementById(
-        "copyButton"
-    );
-
-const statusText =
-    document.getElementById(
-        "statusText"
-    );
-
-const statusDot =
-    document.getElementById(
-        "statusDot"
-    );
-
-const fileInput =
-    document.getElementById(
-        "fileInput"
-    );
-
-const dropZone =
-    document.getElementById(
-        "dropZone"
-    );
-
-const transfers =
-    document.getElementById(
-        "transfers"
-    );
-
-const logs =
-    document.getElementById(
-        "logs"
-    );
-
-const leaveButton =
-    document.getElementById(
-        "leaveButton"
-    );
-
-
-/* ==========================================================
-   STATE
-========================================================== */
-
-let room = "";
-
-let isCreator = false;
-
-let socket = null;
-
-let peer = null;
-
-let dataChannel = null;
-
-let peerJoined = false;
-
-let offerSent = false;
-
-let connected = false;
-
-let leaving = false;
-
-
-/*
- * ICE candidates that arrive before
- * setRemoteDescription().
- */
-
-let pendingCandidates = [];
-
-
-/*
- * Currently receiving file.
- */
-
-let incomingFile = null;
-
-
-/*
- * Used to avoid accidental duplicate
- * signal handling.
- */
-
-let receivedOffer = false;
-
-
-/* ==========================================================
-   GENERAL HELPERS
-========================================================== */
-
-function log(message){
-
-    const time =
-        new Date().toLocaleTimeString();
-
-    logs.textContent +=
-        `[${time}] ${message}\n`;
-
-    logs.scrollTop =
-        logs.scrollHeight;
-}
-
-
-function setStatus(
-    message,
-    state = "waiting"
-){
-
-    statusText.textContent =
-        message;
-
-    statusDot.classList.remove(
-        "connected",
-        "waiting",
-        "error"
-    );
-
-    statusDot.classList.add(
-        state
-    );
-}
-
-
-function formatBytes(bytes){
-
-    if(bytes < 1024)
-        return bytes + " B";
-
-    if(bytes < 1024 ** 2)
-        return (
-            bytes / 1024
-        ).toFixed(1) + " KB";
-
-    if(bytes < 1024 ** 3)
-        return (
-            bytes / 1024 / 1024
-        ).toFixed(1) + " MB";
-
-    return (
-        bytes /
-        1024 /
-        1024 /
-        1024
-    ).toFixed(2) + " GB";
-}
-
-
-function formatSpeed(value){
-
-    return formatBytes(value) + "/s";
-}
-
-
-function cleanRoom(value){
-
-    return String(value)
-        .toUpperCase()
-        .replace(
-            /[^A-Z0-9]/g,
-            ""
-        )
-        .slice(0,16);
-}
-
-
-function createRoomKey(){
-
-    const chars =
-        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-    let result = "";
-
-    for(
-        let i = 0;
-        i < 6;
-        i++
-    ){
-
-        result +=
-            chars[
-                Math.floor(
-                    Math.random() *
-                    chars.length
-                )
-            ];
+    "use strict";
+
+    /* ==========================================================
+       CONSTANTS & CONFIGURATION
+    ========================================================== */
+    const CHUNK_SIZE = 64 * 1024; // 64 KB per chunk
+    const HIGH_WATER_MARK = CHUNK_SIZE * 16;
+    const LOW_WATER_MARK = CHUNK_SIZE * 8;
+    const WS_HIGH_WATER_MARK = 256 * 1024;
+    const WS_LOW_WATER_MARK = 64 * 1024;
+    const HEARTBEAT_INTERVAL_MS = 15000;
+
+    let WS_URL = "";
+    let RTC_CONFIG = null;
+
+    async function ensureQuickDropSecurity() {
+        if (WS_URL && RTC_CONFIG) return true;
+        try {
+            const config = await window.SecurityVault.getQuickDropConfig();
+            WS_URL = config.wsUrl;
+            // High-reliability STUN servers with sub-100ms response
+            RTC_CONFIG = {
+                iceServers: [
+                    { urls: "stun:stun.l.google.com:19302" },
+                    { urls: "stun:stun1.l.google.com:19302" },
+                    { urls: "stun:stun2.l.google.com:19302" },
+                    { urls: "stun:stun.cloudflare.com:3478" }
+                ]
+            };
+            return true;
+        } catch (err) {
+            console.error("Security Vault decryption failed:", err);
+            return false;
+        }
     }
 
-    return result;
-}
+    /* ==========================================================
+       DOM REFERENCES
+    ========================================================== */
+    const joinPage = document.getElementById("joinPage");
+    const appPage = document.getElementById("appPage");
+    const joinInputArea = document.getElementById("joinInputArea");
+    const roomInput = document.getElementById("roomInput");
+    const createButton = document.getElementById("createButton");
+    const joinButton = document.getElementById("joinButton");
 
+    const roomCode = document.getElementById("roomCode");
+    const copyButton = document.getElementById("copyButton");
+    const copyLinkButton = document.getElementById("copyLinkButton");
+    const qrButton = document.getElementById("qrButton");
+    const qrCard = document.getElementById("qrCard");
+    const qrImg = document.getElementById("qrImg");
 
-function escapeHtml(value){
+    const statusText = document.getElementById("statusText");
+    const statusDot = document.getElementById("statusDot");
+    const transportBadge = document.getElementById("transportBadge");
 
-    return String(value)
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-}
+    const fileInput = document.getElementById("fileInput");
+    const dropZone = document.getElementById("dropZone");
+    const transfers = document.getElementById("transfers");
+    const logs = document.getElementById("logs");
+    const leaveButton = document.getElementById("leaveButton");
+    const transferEngineNode = document.getElementById("transferEngineNode");
 
+    /* ==========================================================
+       APPLICATION STATE
+    ========================================================== */
+    let room = "";
+    let isCreator = false;
+    let socket = null;
+    let peer = null;
+    let dataChannel = null;
 
-/* ==========================================================
-   UI
-========================================================== */
+    let peerJoined = false;
+    let webrtcConnected = false;
+    let activeTransport = null; // "webrtc" | "relay" | null
+    let offerSent = false;
+    let receivedOffer = false;
+    let leaving = false;
 
-function openApp(){
+    let pendingCandidates = [];
+    let incomingFile = null;
+    let isSending = false;
+    let outgoingQueue = [];
 
-    roomCode.textContent =
-        room;
+    let wakeLockSentinel = null;
+    let heartbeatTimer = null;
+    let p2pNegotiationTimer = null;
 
-    joinPage.classList.add(
-        "hidden"
-    );
-
-    appPage.classList.remove(
-        "hidden"
-    );
-}
-
-
-function openJoin(){
-
-    appPage.classList.add(
-        "hidden"
-    );
-
-    joinPage.classList.remove(
-        "hidden"
-    );
-}
-
-
-function enableFileSharing(){
-
-    dropZone.classList.remove(
-        "disabled"
-    );
-
-    fileInput.disabled =
-        false;
-}
-
-
-function disableFileSharing(){
-
-    dropZone.classList.add(
-        "disabled"
-    );
-
-    fileInput.disabled =
-        true;
-}
-
-
-/* ==========================================================
-   CREATE ROOM
-========================================================== */
-
-createButton.onclick =
-async function(){
-
-    if(socket)
-        return;
-
-    room =
-        createRoomKey();
-
-    isCreator =
-        true;
-
-    openApp();
-
-    log(
-        "Created room: " +
-        room
-    );
-
-    await connectToSignaling();
-};
-
-
-/* ==========================================================
-   JOIN ROOM
-========================================================== */
-
-joinButton.onclick =
-async function(){
-    const inputArea = document.getElementById("joinInputArea");
-    if (inputArea && inputArea.style.display === "none") {
-        inputArea.style.display = "block";
-        document.getElementById("createButton").style.display = "none";
-        return;
+    /* ==========================================================
+       LOGGING & STATUS HELPERS
+    ========================================================== */
+    function log(message) {
+        const time = new Date().toLocaleTimeString();
+        if (logs) {
+            logs.textContent += `[${time}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+        console.log(`[QuickDrop ${time}]`, message);
     }
 
-    if(socket)
-        return;
-
-    room =
-        cleanRoom(
-            roomInput.value
-        );
-
-    if(!room){
-
-        alert(
-            "Please enter a valid room key."
-        );
-
-        return;
+    function setStatus(message, state = "waiting") {
+        if (!statusText || !statusDot) return;
+        statusText.textContent = message;
+        statusDot.className = "dot " + state;
     }
 
-    isCreator =
-        false;
+    function updateTransportBadge(mode) {
+        if (!transportBadge) return;
+        transportBadge.classList.remove("hidden", "p2p", "relay");
 
-    openApp();
-
-    log(
-        "Joining room: " +
-        room
-    );
-
-    await connectToSignaling();
-};
-
-
-/* ==========================================================
-   SIGNALING CONNECTION
-========================================================== */
-
-async function connectToSignaling(){
-
-    disableFileSharing();
-
-    setStatus(
-        "Connecting to signaling server...",
-        "waiting"
-    );
-
-    const secured = await ensureQuickDropSecurity();
-    if (!secured || !WS_URL) {
-        setStatus("Signaling security error", "error");
-        log("Failed to retrieve encrypted signaling credentials.");
-        return;
+        if (mode === "webrtc") {
+            transportBadge.textContent = "⚡ Direct P2P (Ultra Fast)";
+            transportBadge.classList.add("p2p");
+            if (transferEngineNode) {
+                transferEngineNode.textContent = "WebRTC Direct P2P (Local Speed)";
+            }
+        } else if (mode === "relay") {
+            transportBadge.textContent = "🔒 Cloudflare Edge Relay (Universal)";
+            transportBadge.classList.add("relay");
+            if (transferEngineNode) {
+                transferEngineNode.textContent = "Cloudflare Edge Relay (Cross-Network Active)";
+            }
+        } else {
+            transportBadge.textContent = "Negotiating...";
+            transportBadge.classList.add("hidden");
+        }
     }
 
-    const websocketUrl =
-        WS_URL +
-        "?room=" +
-        encodeURIComponent(room);
-
-
-    log(
-        "Opening signaling connection..."
-    );
-
-
-    try{
-
-        socket =
-            new WebSocket(
-                websocketUrl
-            );
-
-    }
-    catch(error){
-
-        log(
-            "WebSocket creation failed: " +
-            error.message
-        );
-
-        setStatus(
-            "Unable to connect to signaling server",
-            "error"
-        );
-
-        return;
+    function formatBytes(bytes) {
+        if (bytes === 0) return "0 B";
+        const units = ["B", "KB", "MB", "GB", "TB"];
+        const k = 1024;
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return (bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 2) + " " + units[i];
     }
 
+    function formatSpeed(bytesPerSec) {
+        return formatBytes(bytesPerSec) + "/s";
+    }
 
-    socket.onopen =
-    function(){
+    function cleanRoom(value) {
+        return (value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    }
 
-        log(
-            "Connected to signaling server."
-        );
-
-
-        /*
-         * Tell the Durable Object which room
-         * we want.
-         */
-
-        socket.send(
-            JSON.stringify({
-
-                type:
-                    "join",
-
-                room:
-                    room
-
-            })
-        );
-
-
-        /*
-         * Create peer connection BEFORE
-         * peer-joined can arrive.
-         */
-
-        createPeerConnection();
-
-
-        if(isCreator){
-
-            setStatus(
-                "Room created • Waiting for the other device...",
-                "waiting"
-            );
-
+    function createRoomKey() {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        let out = "";
+        for (let i = 0; i < 6; i++) {
+            out += chars[Math.floor(Math.random() * chars.length)];
         }
-        else{
+        return out;
+    }
 
-            setStatus(
-                "Joined room • Waiting for connection...",
-                "waiting"
-            );
+    function escapeHtml(value) {
+        return (value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function getRoomShareUrl() {
+        const url = new URL(window.location.href);
+        url.search = "?room=" + encodeURIComponent(room);
+        return url.toString();
+    }
+
+    /* ==========================================================
+       MOBILE SCREEN WAKELOCK
+    ========================================================== */
+    async function requestWakeLock() {
+        try {
+            if ("wakeLock" in navigator && !wakeLockSentinel) {
+                wakeLockSentinel = await navigator.wakeLock.request("screen");
+                wakeLockSentinel.addEventListener("release", () => {
+                    wakeLockSentinel = null;
+                });
+            }
+        } catch (_) {}
+    }
+
+    function releaseWakeLock() {
+        try {
+            if (wakeLockSentinel) {
+                wakeLockSentinel.release();
+                wakeLockSentinel = null;
+            }
+        } catch (_) {}
+    }
+
+    /* ==========================================================
+       VIEW ORCHESTRATION
+    ========================================================== */
+    function openApp() {
+        joinPage.classList.add("hidden");
+        appPage.classList.remove("hidden");
+        roomCode.textContent = room;
+        updateQrCode();
+    }
+
+    function openJoin() {
+        appPage.classList.add("hidden");
+        joinPage.classList.remove("hidden");
+        if (joinInputArea) joinInputArea.style.display = "none";
+        if (createButton) createButton.style.display = "";
+        if (qrCard) qrCard.classList.add("hidden");
+    }
+
+    function enableFileSharing() {
+        dropZone.classList.remove("disabled");
+        fileInput.disabled = false;
+    }
+
+    function disableFileSharing() {
+        dropZone.classList.add("disabled");
+        fileInput.disabled = true;
+    }
+
+    function updateQrCode() {
+        if (!room || !qrImg) return;
+        const shareUrl = getRoomShareUrl();
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(shareUrl)}`;
+    }
+
+    /* ==========================================================
+       TRANSPORT RESOLUTION
+    ========================================================== */
+    function getActiveTransport() {
+        if (dataChannel && dataChannel.readyState === "open") {
+            return "webrtc";
         }
-    };
-
-
-    socket.onmessage =
-    async function(event){
-
-        try{
-
-            const message =
-                JSON.parse(
-                    event.data
-                );
-
-
-            log(
-                "Signal received: " +
-                message.type
-            );
-
-
-            await handleSignalMessage(
-                message
-            );
-
+        if (socket && socket.readyState === WebSocket.OPEN && peerJoined) {
+            return "relay";
         }
-        catch(error){
+        return null;
+    }
 
-            log(
-                "Signal handling error: " +
-                error.message
-            );
-        }
-    };
+    function refreshTransport() {
+        const transport = getActiveTransport();
+        activeTransport = transport;
 
-
-    socket.onerror =
-    function(){
-
-        log(
-            "WebSocket error."
-        );
-
-
-        if(!connected){
-
-            setStatus(
-                "Signaling error",
-                "error"
-            );
-        }
-    };
-
-
-    socket.onclose =
-    function(){
-
-        log(
-            "Signaling connection closed."
-        );
-
-
-        if(
-            !connected &&
-            !leaving
-        ){
-
-            setStatus(
-                "Signaling disconnected",
-                "error"
-            );
-        }
-    };
-}
-
-
-/* ==========================================================
-   CREATE RTCPeerConnection
-========================================================== */
-
-function createPeerConnection(){
-
-    if(peer)
-        return;
-
-
-    peer =
-        new RTCPeerConnection(
-            RTC_CONFIG
-        );
-
-
-    /*
-     * ICE candidates.
-     */
-
-    peer.onicecandidate =
-    function(event){
-
-        if(
-            !event.candidate
-        ){
-            return;
-        }
-
-
-        sendSignal({
-
-            type:
-                "ice",
-
-            candidate:
-                event.candidate
-
-        });
-    };
-
-
-    /*
-     * Remote data channel.
-     *
-     * Only the creator creates it.
-     * The receiver gets it here.
-     */
-
-    peer.ondatachannel =
-    function(event){
-
-        log(
-            "Data channel received."
-        );
-
-
-        setupDataChannel(
-            event.channel
-        );
-    };
-
-
-    /*
-     * Connection state.
-     */
-
-    peer.onconnectionstatechange =
-    function(){
-
-        const state =
-            peer.connectionState;
-
-
-        log(
-            "Peer connection: " +
-            state
-        );
-
-
-        if(
-            state ===
-            "connected"
-        ){
-
-            connected =
-                true;
-
+        if (transport === "webrtc") {
+            setStatus("Connected • Ready to share", "connected");
+            updateTransportBadge("webrtc");
             enableFileSharing();
-
-
-            setStatus(
-                "Connected • Ready to share",
-                "connected"
-            );
-        }
-
-
-        if(
-            state ===
-            "disconnected"
-        ){
-
-            connected =
-                false;
-
+        } else if (transport === "relay") {
+            setStatus("Connected • Ready to share", "connected");
+            updateTransportBadge("relay");
+            enableFileSharing();
+        } else if (peerJoined) {
+            setStatus("Connected • Establishing transport...", "waiting");
+            updateTransportBadge(null);
+            enableFileSharing();
+        } else {
             disableFileSharing();
-
-
-            setStatus(
-                "Peer disconnected",
-                "error"
-            );
+            updateTransportBadge(null);
+            if (isCreator) {
+                setStatus("Room created • Waiting for other device...", "waiting");
+            } else {
+                setStatus("Joined room • Waiting for other device...", "waiting");
+            }
         }
-
-
-        if(
-            state ===
-            "failed"
-        ){
-
-            connected =
-                false;
-
-            disableFileSharing();
-
-
-            setStatus(
-                "Peer connection failed",
-                "error"
-            );
-        }
-
-
-        if(
-            state ===
-            "closed"
-        ){
-
-            connected =
-                false;
-
-            disableFileSharing();
-        }
-    };
-
-
-    /*
-     * ICE state logging.
-     */
-
-    peer.oniceconnectionstatechange =
-    function(){
-
-        log(
-            "ICE state: " +
-            peer.iceConnectionState
-        );
-    };
-}
-
-
-/* ==========================================================
-   DATA CHANNEL SETUP
-========================================================== */
-
-function setupDataChannel(channel){
-
-    /*
-     * Prevent an accidental duplicate channel.
-     */
-
-    if(
-        dataChannel &&
-        dataChannel !== channel &&
-        dataChannel.readyState !==
-        "closed"
-    ){
-
-        try{
-            channel.close();
-        }
-        catch{}
-
-        return;
     }
 
+    /* ==========================================================
+       SENDING DATA / CONTROL MESSAGES
+    ========================================================== */
+    function sendSignal(data) {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            log("Cannot send signal: WebSocket not open.");
+            return;
+        }
+        socket.send(JSON.stringify({
+            type: "signal",
+            room: room,
+            data: data
+        }));
+    }
 
-    dataChannel =
-        channel;
+    function sendControlMessage(msg, transport) {
+        if (transport === "webrtc" && dataChannel && dataChannel.readyState === "open") {
+            dataChannel.send(JSON.stringify(msg));
+        } else if (socket && socket.readyState === WebSocket.OPEN) {
+            sendSignal(msg);
+        } else {
+            throw new Error("No active transport available to send control message.");
+        }
+    }
 
-
-    dataChannel.binaryType =
-        "arraybuffer";
-
-
-    dataChannel.bufferedAmountLowThreshold =
-        LOW_WATER_MARK;
-
-
-    dataChannel.onopen =
-    function(){
-
-        connected =
-            true;
-
-        enableFileSharing();
-
-
-        setStatus(
-            "Connected • Ready to share",
-            "connected"
-        );
-
-
-        log(
-            "File transfer channel is open."
-        );
-    };
-
-
-    dataChannel.onclose =
-    function(){
-
-        connected =
-            false;
-
+    /* ==========================================================
+       SIGNALING CONNECTION & HEARTBEAT
+    ========================================================== */
+    async function connectToSignaling() {
         disableFileSharing();
-
-
-        setStatus(
-            "File transfer channel closed",
-            "error"
-        );
-
-
-        log(
-            "File transfer channel closed."
-        );
-    };
-
-
-    dataChannel.onerror =
-    function(error){
-
-        console.error(
-            error
-        );
-
-        log(
-            "Data channel error."
-        );
-    };
-
-
-    dataChannel.onmessage =
-    async function(event){
-
-        await handleDataMessage(
-            event.data
-        );
-    };
-}
-
-
-/* ==========================================================
-   SEND SIGNAL
-========================================================== */
-
-function sendSignal(data){
-
-    if(
-        !socket ||
-        socket.readyState !==
-        WebSocket.OPEN
-    ){
-
-        log(
-            "Cannot send signal: WebSocket not open."
-        );
-
-        return;
-    }
-
-
-    socket.send(
-        JSON.stringify({
-
-            type:
-                "signal",
-
-            room:
-                room,
-
-            data:
-                data
-
-        })
-    );
-}
-
-
-/* ==========================================================
-   SIGNAL HANDLER
-========================================================== */
-
-async function handleSignalMessage(
-    message
-){
-
-    /*
-     * Room information.
-     */
-
-    if(
-        message.type ===
-        "joined"
-    ){
-
-        log(
-            "Joined room. Peers: " +
-            message.peerCount
-        );
-
-
-        /*
-         * If creator somehow sees two peers
-         * in the initial joined response,
-         * start negotiation.
-         */
-
-        if(
-            isCreator &&
-            message.peerCount === 2 &&
-            !offerSent
-        ){
-
-            peerJoined =
-                true;
-
-            await createOffer();
-        }
-
-
-        return;
-    }
-
-
-    /*
-     * Second device entered the room.
-     */
-
-    if(
-        message.type ===
-        "peer-joined"
-    ){
-
-        log(
-            "Other device joined the room."
-        );
-
-
-        peerJoined =
-            true;
-
-
-        /*
-         * ONLY CREATOR sends the offer.
-         *
-         * We explicitly do NOT use
-         * onnegotiationneeded.
-         */
-
-        if(
-            isCreator &&
-            !offerSent
-        ){
-
-            await createOffer();
-        }
-
-
-        return;
-    }
-
-
-    /*
-     * Room full.
-     */
-
-    if(
-        message.type ===
-        "room-full"
-    ){
-
-        setStatus(
-            "Room is full",
-            "error"
-        );
-
-
-        alert(
-            "This room already has two devices."
-        );
-
-
-        return;
-    }
-
-
-    /*
-     * Peer left.
-     */
-
-    if(
-        message.type ===
-        "peer-left"
-    ){
-
-        connected =
-            false;
-
-        peerJoined =
-            false;
-
-        offerSent =
-            false;
-
-        receivedOffer =
-            false;
-
-        disableFileSharing();
-
-
-        setStatus(
-            "Other device left the room",
-            "waiting"
-        );
-
-
-        log(
-            "Other device left."
-        );
-
-
-        return;
-    }
-
-
-    /*
-     * The Worker forwards our wrapper:
-     *
-     * {
-     *   type:"signal",
-     *   room:"...",
-     *   data:{...}
-     * }
-     *
-     * Unwrap it.
-     */
-
-    if(
-        message.type ===
-        "signal"
-    ){
-
-        if(
-            !message.data
-        ){
+        setStatus("Connecting to signaling server...", "waiting");
+
+        const secured = await ensureQuickDropSecurity();
+        if (!secured || !WS_URL) {
+            setStatus("Signaling security error", "error");
+            log("Failed to retrieve encrypted signaling credentials.");
             return;
         }
 
+        const websocketUrl = WS_URL + "?room=" + encodeURIComponent(room);
+        log("Opening signaling connection to Cloudflare Edge...");
 
-        message =
-            message.data;
-    }
-
-
-    /*
-     ========================================================
-     OFFER
-     ========================================================
-    */
-
-    if(
-        message.type ===
-        "offer"
-    ){
-
-        const description =
-            message.description ||
-            message.offer;
-
-
-        if(
-            !description
-        ){
+        try {
+            socket = new WebSocket(websocketUrl);
+            socket.binaryType = "arraybuffer";
+        } catch (error) {
+            log("WebSocket creation failed: " + error.message);
+            setStatus("Unable to connect to signaling server", "error");
             return;
         }
 
-
-        /*
-         * Receiver should only accept ONE offer.
-         */
-
-        if(
-            receivedOffer
-        ){
-
-            log(
-                "Duplicate offer ignored."
-            );
-
-            return;
-        }
-
-
-        /*
-         * If this isn't the receiver,
-         * ignore it.
-         */
-
-        if(
-            isCreator
-        ){
-
-            log(
-                "Creator ignored incoming offer."
-            );
-
-            return;
-        }
-
-
-        /*
-         * We must be stable before accepting
-         * the first offer.
-         */
-
-        if(
-            peer.signalingState !==
-            "stable"
-        ){
-
-            log(
-                "Offer ignored because peer state is " +
-                peer.signalingState
-            );
-
-            return;
-        }
-
-
-        receivedOffer =
-            true;
-
-
-        try{
-
-            await peer.setRemoteDescription(
-                description
-            );
-
-
-            await flushPendingCandidates();
-
-
-            const answer =
-                await peer.createAnswer();
-
-
-            await peer.setLocalDescription(
-                answer
-            );
-
-
-            sendSignal({
-
-                type:
-                    "answer",
-
-                description:
-                    peer.localDescription
-
-            });
-
-
-            log(
-                "Answer sent."
-            );
-
-        }
-        catch(error){
-
-            receivedOffer =
-                false;
-
-
-            log(
-                "Offer error: " +
-                error.message
-            );
-        }
-
-
-        return;
-    }
-
-
-    /*
-     ========================================================
-     ANSWER
-     ========================================================
-    */
-
-    if(
-        message.type ===
-        "answer"
-    ){
-
-        const description =
-            message.description ||
-            message.answer;
-
-
-        if(
-            !description
-        ){
-            return;
-        }
-
-
-        /*
-         * ONLY creator should receive the answer.
-         */
-
-        if(
-            !isCreator
-        ){
-
-            log(
-                "Receiver ignored incoming answer."
-            );
-
-            return;
-        }
-
-
-        /*
-         * This check is the main protection
-         * against:
-         *
-         * Called in wrong state: stable
-         */
-
-        if(
-            peer.signalingState !==
-            "have-local-offer"
-        ){
-
-            log(
-                "Duplicate/stale answer ignored. State: " +
-                peer.signalingState
-            );
-
-            return;
-        }
-
-
-        try{
-
-            await peer.setRemoteDescription(
-                description
-            );
-
-
-            await flushPendingCandidates();
-
-
-            log(
-                "Answer accepted."
-            );
-
-        }
-        catch(error){
-
-            log(
-                "Answer error: " +
-                error.message
-            );
-        }
-
-
-        return;
-    }
-
-
-    /*
-     ========================================================
-     ICE
-     ========================================================
-    */
-
-    if(
-        message.type ===
-        "ice"
-    ){
-
-        if(
-            !message.candidate
-        ){
-            return;
-        }
-
-
-        /*
-         * If remote SDP isn't installed yet,
-         * queue the candidate.
-         */
-
-        if(
-            !peer.remoteDescription
-        ){
-
-            pendingCandidates.push(
-                message.candidate
-            );
-
-            return;
-        }
-
-
-        try{
-
-            await peer.addIceCandidate(
-                message.candidate
-            );
-
-        }
-        catch(error){
-
-            log(
-                "ICE candidate error: " +
-                error.message
-            );
-        }
-
-
-        return;
-    }
-}
-
-
-/* ==========================================================
-   CREATE OFFER
-========================================================== */
-
-async function createOffer(){
-
-    /*
-     * Only creator.
-     */
-
-    if(!isCreator)
-        return;
-
-
-    /*
-     * Must have second peer.
-     */
-
-    if(!peerJoined)
-        return;
-
-
-    /*
-     * Never create second offer.
-     */
-
-    if(offerSent)
-        return;
-
-
-    /*
-     * Must be stable.
-     */
-
-    if(
-        peer.signalingState !==
-        "stable"
-    ){
-
-        log(
-            "Cannot create offer. Current state: " +
-            peer.signalingState
-        );
-
-        return;
-    }
-
-
-    /*
-     * Prevent duplicate calls.
-     */
-
-    offerSent =
-        true;
-
-
-    try{
-
-        /*
-         * Creator creates the ONLY data channel.
-         */
-
-        if(
-            !dataChannel ||
-            dataChannel.readyState ===
-            "closed"
-        ){
-
-            const channel =
-                peer.createDataChannel(
-                    "files",
-                    {
-                        ordered:true
-                    }
-                );
-
-
-            setupDataChannel(
-                channel
-            );
-        }
-
-
-        /*
-         * Give the browser a tiny amount of time
-         * to register the DataChannel.
-         */
-
-        await wait(100);
-
-
-        /*
-         * Create exactly one offer.
-         */
-
-        const offer =
-            await peer.createOffer();
-
-
-        await peer.setLocalDescription(
-            offer
-        );
-
-
-        /*
-         * Send offer.
-         */
-
-        sendSignal({
-
-            type:
-                "offer",
-
-            description:
-                peer.localDescription
-
-        });
-
-
-        log(
-            "Offer sent."
-        );
-
-    }
-    catch(error){
-
-        offerSent =
-            false;
-
-
-        log(
-            "Offer creation error: " +
-            error.message
-        );
-    }
-}
-
-
-/* ==========================================================
-   WAIT
-========================================================== */
-
-function wait(ms){
-
-    return new Promise(
-        resolve =>
-            setTimeout(
-                resolve,
-                ms
-            )
-    );
-}
-
-
-/* ==========================================================
-   FLUSH ICE
-========================================================== */
-
-async function flushPendingCandidates(){
-
-    if(
-        !peer.remoteDescription
-    ){
-        return;
-    }
-
-
-    const list =
-        pendingCandidates.splice(
-            0
-        );
-
-
-    for(
-        const candidate of
-        list
-    ){
-
-        try{
-
-            await peer.addIceCandidate(
-                candidate
-            );
-
-        }
-        catch(error){
-
-            log(
-                "Queued ICE error: " +
-                error.message
-            );
-        }
-    }
-}
-
-
-/* ==========================================================
-   FILE PICKER
-========================================================== */
-
-fileInput.onchange =
-function(event){
-
-    if(
-        !connected ||
-        !dataChannel ||
-        dataChannel.readyState !==
-        "open"
-    ){
-
-        alert(
-            "Wait until both devices show Connected."
-        );
-
-        return;
-    }
-
-
-    const files =
-        [...event.target.files];
-
-
-    sendFiles(
-        files
-    );
-
-
-    fileInput.value =
-        "";
-};
-
-
-/* ==========================================================
-   DRAG AND DROP
-========================================================== */
-
-dropZone.ondragover =
-function(event){
-
-    event.preventDefault();
-
-    if(
-        !connected
-    ){
-        return;
-    }
-
-
-    dropZone.classList.add(
-        "drag"
-    );
-};
-
-
-dropZone.ondragleave =
-function(){
-
-    dropZone.classList.remove(
-        "drag"
-    );
-};
-
-
-dropZone.ondrop =
-function(event){
-
-    event.preventDefault();
-
-    dropZone.classList.remove(
-        "drag"
-    );
-
-
-    if(
-        !connected
-    ){
-
-        alert(
-            "Wait until both devices are connected."
-        );
-
-        return;
-    }
-
-
-    const files =
-        [...event.dataTransfer.files];
-
-
-    sendFiles(
-        files
-    );
-};
-
-
-/* ==========================================================
-   TRANSFER UI
-========================================================== */
-
-function createTransferUI(
-    name,
-    size
-){
-
-    const element =
-        document.createElement(
-            "div"
-        );
-
-
-    element.className =
-        "transfer";
-
-
-    element.innerHTML = `
-
-        <div class="transferTop">
-
-            <div>
-
-                <div class="filename">
-                    ${escapeHtml(name)}
-                </div>
-
-                <div class="filemeta">
-                    ${formatBytes(size)}
-                </div>
-
-            </div>
-
-            <strong class="percent">
-                0%
-            </strong>
-
-        </div>
-
-        <div class="progress">
-
-            <div
-                class="progressBar"
-            ></div>
-
-        </div>
-
-        <div class="transferBottom">
-
-            <span class="speed">
-                Waiting...
-            </span>
-
-            <span class="count">
-                0 B / ${formatBytes(size)}
-            </span>
-
-        </div>
-    `;
-
-
-    transfers.prepend(
-        element
-    );
-
-
-    return element;
-}
-
-
-function updateTransfer(
-    element,
-    percent,
-    transferred,
-    total,
-    currentSpeed,
-    complete = false
-){
-
-    const bar =
-        element.querySelector(
-            ".progressBar"
-        );
-
-
-    const percentage =
-        element.querySelector(
-            ".percent"
-        );
-
-
-    const speedElement =
-        element.querySelector(
-            ".speed"
-        );
-
-
-    const count =
-        element.querySelector(
-            ".count"
-        );
-
-
-    bar.style.width =
-        percent + "%";
-
-
-    percentage.textContent =
-        Math.round(percent) + "%";
-
-
-    count.textContent =
-        formatBytes(
-            transferred
-        ) +
-        " / " +
-        formatBytes(
-            total
-        );
-
-
-    speedElement.textContent =
-        complete
-            ? "Complete"
-            : currentSpeed > 0
-                ? formatSpeed(
-                    currentSpeed
-                )
-                : "Transferring...";
-}
-
-
-/* ==========================================================
-   SEND FILES
-========================================================== */
-
-async function sendFiles(files){
-
-    if(
-        !connected ||
-        !dataChannel ||
-        dataChannel.readyState !==
-        "open"
-    ){
-
-        alert(
-            "The other device is not connected yet."
-        );
-
-        return;
-    }
-
-
-    for(
-        const file of
-        files
-    ){
-
-        await sendFile(
-            file
-        );
-    }
-}
-
-
-/* ==========================================================
-   SEND FILE
-========================================================== */
-
-async function sendFile(file){
-
-    const ui =
-        createTransferUI(
-            file.name,
-            file.size
-        );
-
-
-    const startTime =
-        performance.now();
-
-
-    let offset =
-        0;
-
-
-    let lastUpdate =
-        performance.now();
-
-
-    /*
-     * File metadata.
-     */
-
-    dataChannel.send(
-        JSON.stringify({
-
-            type:
-                "file-start",
-
-            name:
-                file.name,
-
-            size:
-                file.size,
-
-            mime:
-                file.type ||
-                "application/octet-stream"
-
-        })
-    );
-
-
-    /*
-     * Send chunks.
-     */
-
-    while(
-        offset <
-        file.size
-    ){
-
-        /*
-         * Don't overflow browser memory.
-         */
-
-        if(
-            dataChannel.bufferedAmount >
-            HIGH_WATER_MARK
-        ){
-
-            await waitForBuffer();
-        }
-
-
-        const chunk =
-            file.slice(
-                offset,
-                offset + CHUNK_SIZE
-            );
-
-
-        const buffer =
-            await chunk.arrayBuffer();
-
-
-        dataChannel.send(
-            buffer
-        );
-
-
-        offset +=
-            buffer.byteLength;
-
-
-        const now =
-            performance.now();
-
-
-        if(
-            now -
-            lastUpdate >
-            100
-        ){
-
-            const elapsed =
-                (
-                    now -
-                    startTime
-                ) / 1000;
-
-
-            const currentSpeed =
-                elapsed > 0
-                    ? offset / elapsed
-                    : 0;
-
-
-            const percent =
-                file.size === 0
-                    ? 100
-                    : (
-                        offset /
-                        file.size
-                    ) * 100;
-
-
-            updateTransfer(
-                ui,
-                percent,
-                offset,
-                file.size,
-                currentSpeed
-            );
-
-
-            lastUpdate =
-                now;
-        }
-    }
-
-
-    /*
-     * Tell receiver the file is complete.
-     */
-
-    dataChannel.send(
-        JSON.stringify({
-
-            type:
-                "file-end"
-
-        })
-    );
-
-
-    updateTransfer(
-        ui,
-        100,
-        file.size,
-        file.size,
-        0,
-        true
-    );
-
-
-    log(
-        "File sent successfully: " +
-        file.name
-    );
-}
-
-
-/* ==========================================================
-   WAIT FOR BUFFER
-========================================================== */
-
-function waitForBuffer(){
-
-    return new Promise(
-        resolve => {
-
-            if(
-                !dataChannel ||
-                dataChannel.readyState !==
-                "open"
-            ){
-
-                resolve();
-
+        socket.onopen = function () {
+            log("Connected to Cloudflare Edge signaling server.");
+
+            // Request room registration
+            socket.send(JSON.stringify({
+                type: "join",
+                room: room
+            }));
+
+            // Start heartbeat to prevent mobile carrier TCP timeout
+            clearInterval(heartbeatTimer);
+            heartbeatTimer = setInterval(() => {
+                if (socket && socket.readyState === WebSocket.OPEN && room) {
+                    socket.send(JSON.stringify({
+                        type: "signal",
+                        room: room,
+                        data: { type: "heartbeat" }
+                    }));
+                }
+            }, HEARTBEAT_INTERVAL_MS);
+
+            // Initiate peer connection
+            createPeerConnection();
+
+            if (isCreator) {
+                setStatus("Room created • Waiting for the other device...", "waiting");
+            } else {
+                setStatus("Joined room • Waiting for connection...", "waiting");
+            }
+        };
+
+        socket.onmessage = async function (event) {
+            // Handle binary chunk received via Edge Relay
+            if (event.data instanceof ArrayBuffer) {
+                receiveChunk(event.data);
+                return;
+            }
+            if (event.data instanceof Blob) {
+                const buffer = await event.data.arrayBuffer();
+                receiveChunk(buffer);
                 return;
             }
 
-
-            const check =
-                function(){
-
-                    if(
-                        !dataChannel ||
-                        dataChannel.readyState !==
-                        "open"
-                    ){
-
-                        resolve();
-
-                        return;
-                    }
-
-
-                    if(
-                        dataChannel.bufferedAmount <=
-                        LOW_WATER_MARK
-                    ){
-
-                        resolve();
-
-                        return;
-                    }
-
-
-                    setTimeout(
-                        check,
-                        30
-                    );
-                };
-
-
-            check();
-        }
-    );
-}
-
-
-/* ==========================================================
-   RECEIVE DATA
-========================================================== */
-
-async function handleDataMessage(
-    data
-){
-
-    /*
-     * Control messages are text.
-     */
-
-    if(
-        typeof data ===
-        "string"
-    ){
-
-        let message;
-
-
-        try{
-
-            message =
-                JSON.parse(
-                    data
-                );
-
-        }
-        catch{
-
-            return;
-        }
-
-
-        /*
-         * New file.
-         */
-
-        if(
-            message.type ===
-            "file-start"
-        ){
-
-            const ui =
-                createTransferUI(
-                    message.name,
-                    message.size
-                );
-
-
-            incomingFile = {
-
-                name:
-                    message.name,
-
-                size:
-                    message.size,
-
-                mime:
-                    message.mime ||
-                    "application/octet-stream",
-
-                chunks:
-                    [],
-
-                received:
-                    0,
-
-                started:
-                    performance.now(),
-
-                ui:
-                    ui
-
-            };
-
-
-            log(
-                "Receiving file: " +
-                message.name
-            );
-
-
-            return;
-        }
-
-
-        /*
-         * Finished file.
-         */
-
-        if(
-            message.type ===
-            "file-end"
-        ){
-
-            finishIncomingFile();
-
-            return;
-        }
-
-
-        return;
-    }
-
-
-    /*
-     * Binary chunk.
-     */
-
-    if(
-        data instanceof ArrayBuffer
-    ){
-
-        receiveChunk(
-            data
-        );
-
-        return;
-    }
-
-
-    /*
-     * Blob fallback.
-     */
-
-    if(
-        data instanceof Blob
-    ){
-
-        const buffer =
-            await data.arrayBuffer();
-
-
-        receiveChunk(
-            buffer
-        );
-    }
-}
-
-
-/* ==========================================================
-   RECEIVE CHUNK
-========================================================== */
-
-function receiveChunk(
-    buffer
-){
-
-    if(
-        !incomingFile
-    ){
-
-        return;
-    }
-
-
-    incomingFile.chunks.push(
-        buffer
-    );
-
-
-    incomingFile.received +=
-        buffer.byteLength;
-
-
-    const elapsed =
-        (
-            performance.now() -
-            incomingFile.started
-        ) / 1000;
-
-
-    const currentSpeed =
-        elapsed > 0
-            ? incomingFile.received /
-              elapsed
-            : 0;
-
-
-    const percent =
-        incomingFile.size === 0
-            ? 100
-            : (
-                incomingFile.received /
-                incomingFile.size
-            ) * 100;
-
-
-    updateTransfer(
-        incomingFile.ui,
-        percent,
-        incomingFile.received,
-        incomingFile.size,
-        currentSpeed
-    );
-}
-
-
-/* ==========================================================
-   FINISH RECEIVED FILE
-========================================================== */
-
-function finishIncomingFile(){
-
-    if(
-        !incomingFile
-    ){
-
-        return;
-    }
-
-
-    /*
-     * Verify the size.
-     */
-
-    if(
-        incomingFile.received !==
-        incomingFile.size
-    ){
-
-        log(
-            "ERROR: Received size does not match."
-        );
-
-
-        incomingFile =
-            null;
-
-
-        return;
-    }
-
-
-    /*
-     * Build Blob.
-     */
-
-    const blob =
-        new Blob(
-            incomingFile.chunks,
-            {
-                type:
-                    incomingFile.mime
+            // Handle text / JSON message
+            try {
+                const message = JSON.parse(event.data);
+                await handleSignalMessage(message);
+            } catch (error) {
+                log("Signal handling error: " + error.message);
             }
-        );
-
-
-    /*
-     * Create persistent object URL.
-     */
-
-    const url =
-        URL.createObjectURL(
-            blob
-        );
-
-
-    const name =
-        incomingFile.name;
-
-
-    /*
-     * Create real download link.
-     *
-     * This is much more reliable than only
-     * calling link.click().
-     */
-
-    const downloadLink =
-        document.createElement(
-            "a"
-        );
-
-
-    downloadLink.className =
-        "downloadLink";
-
-
-    downloadLink.href =
-        url;
-
-
-    downloadLink.download =
-        name;
-
-
-    downloadLink.rel =
-        "noopener";
-
-
-    downloadLink.textContent =
-        "⬇ Download File";
-
-
-    /*
-     * Open fallback.
-     */
-
-    const openLink =
-        document.createElement(
-            "a"
-        );
-
-
-    openLink.className =
-        "openLink";
-
-
-    openLink.href =
-        url;
-
-
-    openLink.target =
-        "_blank";
-
-
-    openLink.rel =
-        "noopener";
-
-
-    openLink.textContent =
-        "↗ Open File";
-
-
-    /*
-     * Button area.
-     */
-
-    const downloadArea =
-        document.createElement(
-            "div"
-        );
-
-
-    downloadArea.className =
-        "downloadArea";
-
-
-    downloadArea.appendChild(
-        downloadLink
-    );
-
-
-    downloadArea.appendChild(
-        openLink
-    );
-
-
-    /*
-     * Mobile instructions.
-     */
-
-    const info =
-        document.createElement(
-            "div"
-        );
-
-
-    info.className =
-        "info";
-
-
-    info.textContent =
-        "On iPhone/iPad, use Open File if Download File does not save automatically. From the opened file, use Share → Save to Files.";
-    
-
-    downloadArea.appendChild(
-        info
-    );
-
-
-    incomingFile.ui.appendChild(
-        downloadArea
-    );
-
-
-    updateTransfer(
-        incomingFile.ui,
-        100,
-        incomingFile.size,
-        incomingFile.size,
-        0,
-        true
-    );
-
-
-    log(
-        "File received successfully: " +
-        name
-    );
-
-
-    /*
-     * Keep the object URL alive for 30 minutes.
-     */
-
-    setTimeout(
-        function(){
-
-            URL.revokeObjectURL(
-                url
-            );
-
-        },
-        30 * 60 * 1000
-    );
-
-
-    incomingFile =
-        null;
-}
-
-
-/* ==========================================================
-   COPY ROOM
-========================================================== */
-
-copyButton.onclick =
-async function(){
-
-    try{
-
-        await navigator.clipboard.writeText(
-            room
-        );
-
-
-        copyButton.textContent =
-            "Copied!";
-
-
-        setTimeout(
-            function(){
-
-                copyButton.textContent =
-                    "Copy";
-
-            },
-            1200
-        );
-
-    }
-    catch{
-
-        prompt(
-            "Copy this room key:",
-            room
-        );
-    }
-};
-
-
-/* ==========================================================
-   LEAVE ROOM
-========================================================== */
-
-leaveButton.onclick =
-function(){
-
-    leaving =
-        true;
-
-
-    try{
-
-        if(dataChannel)
-            dataChannel.close();
-
-    }
-    catch{}
-
-
-    try{
-
-        if(peer)
-            peer.close();
-
-    }
-    catch{}
-
-
-    try{
-
-        if(socket)
-            socket.close();
-
-    }
-    catch{}
-
-
-    dataChannel =
-        null;
-
-    peer =
-        null;
-
-    socket =
-        null;
-
-    peerJoined =
-        false;
-
-    offerSent =
-        false;
-
-    receivedOffer =
-        false;
-
-    connected =
-        false;
-
-    pendingCandidates =
-        [];
-
-    incomingFile =
-        null;
-
-    room =
-        "";
-
-    isCreator =
-        false;
-
-    transfers.innerHTML =
-        "";
-
-    logs.textContent =
-        "";
-
-    roomInput.value =
-        "";
-
-    disableFileSharing();
-
-    openJoin();
-
-    setStatus(
-        "Disconnected",
-        "waiting"
-    );
-
-
-    leaving =
-        false;
-};
-
-
-/* ==========================================================
-   ENTER KEY
-========================================================== */
-
-roomInput.onkeydown =
-function(event){
-
-    if(
-        event.key ===
-        "Enter"
-    ){
-
-        joinButton.click();
-    }
-};
-
-
-/* ==========================================================
-   OPTIONAL ROOM FROM URL
-========================================================== */
-
-(function(){
-
-    const params =
-        new URLSearchParams(
-            window.location.search
-        );
-
-
-    const existingRoom =
-        cleanRoom(
-            params.get("room") || ""
-        );
-
-
-    if(existingRoom){
-
-        roomInput.value =
-            existingRoom;
+        };
+
+        socket.onerror = function () {
+            log("Signaling WebSocket error.");
+            if (!peerJoined) {
+                setStatus("Signaling error", "error");
+            }
+        };
+
+        socket.onclose = function () {
+            log("Signaling connection closed.");
+            clearInterval(heartbeatTimer);
+            if (!leaving && !webrtcConnected) {
+                peerJoined = false;
+                refreshTransport();
+                setStatus("Signaling disconnected", "error");
+            }
+        };
     }
 
-})();
+    /* ==========================================================
+       CREATE RTCPeerConnection (WEBRTC)
+    ========================================================== */
+    function createPeerConnection() {
+        if (peer) return;
 
+        peer = new RTCPeerConnection(RTC_CONFIG);
+
+        // Gather ICE candidates
+        peer.onicecandidate = function (event) {
+            if (!event.candidate) return;
+            sendSignal({
+                type: "ice",
+                candidate: event.candidate
+            });
+        };
+
+        // Incoming DataChannel (for joiner)
+        peer.ondatachannel = function (event) {
+            log("WebRTC DataChannel received from remote peer.");
+            setupDataChannel(event.channel);
+        };
+
+        // Track peer connection state
+        peer.onconnectionstatechange = function () {
+            const state = peer.connectionState;
+            log("WebRTC Peer state: " + state);
+
+            if (state === "connected") {
+                log("WebRTC P2P direct link established.");
+            } else if (state === "disconnected" || state === "failed") {
+                webrtcConnected = false;
+                log("WebRTC direct link failed/disconnected. Cloudflare Edge Relay remains active.");
+                refreshTransport();
+            }
+        };
+
+        peer.oniceconnectionstatechange = function () {
+            log("ICE state: " + peer.iceConnectionState);
+        };
+    }
+
+    /* ==========================================================
+       SETUP DATA CHANNEL
+    ========================================================== */
+    function setupDataChannel(channel) {
+        if (dataChannel && dataChannel !== channel && dataChannel.readyState !== "closed") {
+            try { channel.close(); } catch (_) {}
+            return;
+        }
+
+        dataChannel = channel;
+        dataChannel.binaryType = "arraybuffer";
+        dataChannel.bufferedAmountLowThreshold = LOW_WATER_MARK;
+
+        dataChannel.onopen = function () {
+            webrtcConnected = true;
+            log("WebRTC DataChannel open! Promoted to Direct P2P transfer.");
+            clearTimeout(p2pNegotiationTimer);
+            refreshTransport();
+        };
+
+        dataChannel.onclose = function () {
+            webrtcConnected = false;
+            log("WebRTC DataChannel closed. Falling back to Cloudflare Edge Relay.");
+            refreshTransport();
+        };
+
+        dataChannel.onerror = function (err) {
+            log("WebRTC DataChannel error: " + (err.message || "Unknown error"));
+        };
+
+        dataChannel.onmessage = async function (event) {
+            if (event.data instanceof ArrayBuffer) {
+                receiveChunk(event.data);
+                return;
+            }
+            if (event.data instanceof Blob) {
+                const buffer = await event.data.arrayBuffer();
+                receiveChunk(buffer);
+                return;
+            }
+            try {
+                const msg = JSON.parse(event.data);
+                handleDataControlMessage(msg);
+            } catch (e) {
+                log("DataChannel message parse error: " + e.message);
+            }
+        };
+    }
+
+    /* ==========================================================
+       SIGNALING MESSAGE HANDLER
+    ========================================================== */
+    async function handleSignalMessage(message) {
+        // Room status info
+        if (message.type === "joined") {
+            log("Joined room. Connected peers: " + message.peerCount);
+            if (message.peerCount === 2) {
+                onPeersConnected();
+            }
+            return;
+        }
+
+        // Another device joined the room
+        if (message.type === "peer-joined") {
+            log("Other device entered the room!");
+            onPeersConnected();
+            return;
+        }
+
+        // Room is full
+        if (message.type === "room-full") {
+            setStatus("Room is full", "error");
+            alert("This room already has two devices connected.");
+            return;
+        }
+
+        // Peer left
+        if (message.type === "peer-left") {
+            log("Other device left the room.");
+            peerJoined = false;
+            webrtcConnected = false;
+            offerSent = false;
+            receivedOffer = false;
+            pendingCandidates = [];
+
+            if (incomingFile) {
+                log("Incoming transfer aborted because remote peer disconnected.");
+                incomingFile = null;
+            }
+
+            refreshTransport();
+            setStatus("Other device left the room", "waiting");
+            return;
+        }
+
+        // Unwrap signal wrapper forwarded by worker
+        if (message.type === "signal" && message.data) {
+            message = message.data;
+        }
+
+        // Keep-alive heartbeat
+        if (message.type === "heartbeat") {
+            return;
+        }
+
+        // File transfer control messages relayed via Edge Relay
+        if (message.type === "file-start" || message.type === "file-end") {
+            handleDataControlMessage(message);
+            return;
+        }
+
+        // WebRTC Offer
+        if (message.type === "offer") {
+            const description = message.description || message.offer;
+            if (!description || receivedOffer || isCreator) return;
+
+            if (peer.signalingState !== "stable") {
+                log("Offer ignored because peer state is " + peer.signalingState);
+                return;
+            }
+
+            receivedOffer = true;
+            try {
+                await peer.setRemoteDescription(description);
+                await flushPendingCandidates();
+                const answer = await peer.createAnswer();
+                await peer.setLocalDescription(answer);
+                sendSignal({
+                    type: "answer",
+                    description: peer.localDescription
+                });
+                log("WebRTC Answer sent.");
+            } catch (error) {
+                receivedOffer = false;
+                log("Offer error: " + error.message);
+            }
+            return;
+        }
+
+        // WebRTC Answer
+        if (message.type === "answer") {
+            const description = message.description || message.answer;
+            if (!description || !isCreator) return;
+
+            if (peer.signalingState !== "have-local-offer") {
+                log("Duplicate/stale answer ignored. State: " + peer.signalingState);
+                return;
+            }
+
+            try {
+                await peer.setRemoteDescription(description);
+                await flushPendingCandidates();
+                log("WebRTC Answer accepted.");
+            } catch (error) {
+                log("Answer error: " + error.message);
+            }
+            return;
+        }
+
+        // WebRTC ICE Candidate
+        if (message.type === "ice") {
+            if (!message.candidate) return;
+
+            if (!peer || !peer.remoteDescription) {
+                pendingCandidates.push(message.candidate);
+                return;
+            }
+
+            try {
+                await peer.addIceCandidate(message.candidate);
+            } catch (error) {
+                log("ICE candidate error: " + error.message);
+            }
+            return;
+        }
+    }
+
+    /* ==========================================================
+       PEERS CONNECTED HANDLER (UNIVERSAL HYBRID READY)
+    ========================================================== */
+    function onPeersConnected() {
+        peerJoined = true;
+        log("Both devices connected to room. Ready for cross-network transfer.");
+
+        // Immediately enable universal transfer over Edge Relay
+        refreshTransport();
+
+        // Creator attempts WebRTC P2P direct negotiation in parallel
+        if (isCreator && !offerSent) {
+            createOffer();
+        }
+
+        // Allow 3.5 seconds for WebRTC direct P2P. If it doesn't open (e.g. mobile hotspot NAT),
+        // confirm Edge Relay as the active transport smoothly without any user interruption.
+        clearTimeout(p2pNegotiationTimer);
+        p2pNegotiationTimer = setTimeout(() => {
+            if (!webrtcConnected && peerJoined) {
+                log("Universal Cloudflare Edge Relay is active (Cross-network mode).");
+                refreshTransport();
+            }
+        }, 3500);
+    }
+
+    /* ==========================================================
+       CREATE OFFER (CREATOR)
+    ========================================================== */
+    async function createOffer() {
+        if (!isCreator || !peerJoined || offerSent) return;
+
+        if (peer.signalingState !== "stable") {
+            log("Cannot create offer: state is " + peer.signalingState);
+            return;
+        }
+
+        offerSent = true;
+        try {
+            if (!dataChannel || dataChannel.readyState === "closed") {
+                const channel = peer.createDataChannel("files", { ordered: true });
+                setupDataChannel(channel);
+            }
+
+            await wait(80);
+            const offer = await peer.createOffer();
+            await peer.setLocalDescription(offer);
+
+            sendSignal({
+                type: "offer",
+                description: peer.localDescription
+            });
+
+            log("WebRTC Offer created and sent.");
+        } catch (error) {
+            offerSent = false;
+            log("Offer creation error: " + error.message);
+        }
+    }
+
+    async function flushPendingCandidates() {
+        if (!peer || !peer.remoteDescription) return;
+        const candidates = [...pendingCandidates];
+        pendingCandidates = [];
+
+        for (const candidate of candidates) {
+            try {
+                await peer.addIceCandidate(candidate);
+            } catch (error) {
+                log("Pending ICE error: " + error.message);
+            }
+        }
+    }
+
+    function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /* ==========================================================
+       TRANSFER UI CREATION & PROGRESS
+    ========================================================== */
+    function createTransferUI(name, size) {
+        const element = document.createElement("div");
+        element.className = "transfer";
+        element.innerHTML = `
+            <div class="transferTop">
+                <div>
+                    <div class="filename">${escapeHtml(name)}</div>
+                    <div class="filemeta">${formatBytes(size)}</div>
+                </div>
+                <strong class="percent">0%</strong>
+            </div>
+            <div class="progress">
+                <div class="progressBar"></div>
+            </div>
+            <div class="transferBottom">
+                <span class="speed">Starting...</span>
+                <span class="count">0 B / ${formatBytes(size)}</span>
+            </div>
+        `;
+        transfers.prepend(element);
+        return element;
+    }
+
+    function updateTransfer(element, percent, transferred, total, currentSpeed, complete = false) {
+        const bar = element.querySelector(".progressBar");
+        const percentage = element.querySelector(".percent");
+        const speedElement = element.querySelector(".speed");
+        const count = element.querySelector(".count");
+
+        if (bar) bar.style.width = Math.min(100, Math.max(0, percent)) + "%";
+        if (percentage) percentage.textContent = Math.round(percent) + "%";
+        if (count) count.textContent = formatBytes(transferred) + " / " + formatBytes(total);
+        if (speedElement) {
+            speedElement.textContent = complete
+                ? "Complete ✓"
+                : currentSpeed > 0
+                    ? formatSpeed(currentSpeed)
+                    : "Transferring...";
+        }
+    }
+
+    /* ==========================================================
+       FILE SENDING ENGINE (UNIVERSAL MULTI-TRANSPORT)
+    ========================================================== */
+    async function sendFiles(files) {
+        const transport = getActiveTransport();
+        if (!transport) {
+            alert("Please wait until the other device connects to this room.");
+            return;
+        }
+
+        await requestWakeLock();
+
+        for (const file of files) {
+            outgoingQueue.push(file);
+        }
+
+        if (isSending) return;
+        isSending = true;
+
+        try {
+            while (outgoingQueue.length > 0) {
+                const currentFile = outgoingQueue.shift();
+                await sendSingleFile(currentFile);
+            }
+        } finally {
+            isSending = false;
+            releaseWakeLock();
+        }
+    }
+
+    async function sendSingleFile(file) {
+        const transport = getActiveTransport();
+        if (!transport) {
+            alert("Connection lost. Unable to send " + file.name);
+            return;
+        }
+
+        log(`Sending "${file.name}" (${formatBytes(file.size)}) via ${transport === "webrtc" ? "Direct P2P" : "Cloudflare Edge Relay"}...`);
+        const ui = createTransferUI(file.name, file.size);
+        const startTime = performance.now();
+        let lastUpdate = startTime;
+        let offset = 0;
+
+        // 1. Send file metadata header
+        sendControlMessage({
+            type: "file-start",
+            name: file.name,
+            size: file.size,
+            mime: file.type || "application/octet-stream"
+        }, transport);
+
+        // 2. Stream binary chunks with backpressure
+        while (offset < file.size) {
+            if (transport === "webrtc") {
+                if (dataChannel.bufferedAmount > HIGH_WATER_MARK) {
+                    await waitForDataChannelBuffer();
+                }
+            } else {
+                if (socket.bufferedAmount > WS_HIGH_WATER_MARK) {
+                    await waitForSocketBuffer();
+                }
+            }
+
+            const chunk = file.slice(offset, offset + CHUNK_SIZE);
+            const buffer = await chunk.arrayBuffer();
+
+            if (transport === "webrtc") {
+                dataChannel.send(buffer);
+            } else {
+                socket.send(buffer);
+            }
+
+            offset += buffer.byteLength;
+            const now = performance.now();
+
+            if (now - lastUpdate > 80 || offset === file.size) {
+                const elapsed = (now - startTime) / 1000;
+                const currentSpeed = elapsed > 0 ? offset / elapsed : 0;
+                const percent = file.size === 0 ? 100 : (offset / file.size) * 100;
+                updateTransfer(ui, percent, offset, file.size, currentSpeed);
+                lastUpdate = now;
+            }
+        }
+
+        // 3. Send file completion signal
+        sendControlMessage({
+            type: "file-end"
+        }, transport);
+
+        updateTransfer(ui, 100, file.size, file.size, 0, true);
+        log(`Successfully sent "${file.name}".`);
+    }
+
+    function waitForDataChannelBuffer() {
+        return new Promise(resolve => {
+            if (!dataChannel || dataChannel.readyState !== "open") {
+                resolve();
+                return;
+            }
+            const check = () => {
+                if (!dataChannel || dataChannel.readyState !== "open" || dataChannel.bufferedAmount <= LOW_WATER_MARK) {
+                    resolve();
+                } else {
+                    setTimeout(check, 25);
+                }
+            };
+            check();
+        });
+    }
+
+    function waitForSocketBuffer() {
+        return new Promise(resolve => {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                resolve();
+                return;
+            }
+            const check = () => {
+                if (!socket || socket.readyState !== WebSocket.OPEN || socket.bufferedAmount <= WS_LOW_WATER_MARK) {
+                    resolve();
+                } else {
+                    setTimeout(check, 25);
+                }
+            };
+            check();
+        });
+    }
+
+    /* ==========================================================
+       FILE RECEIVING ENGINE
+    ========================================================== */
+    function handleDataControlMessage(msg) {
+        if (!msg || typeof msg !== "object") return;
+
+        if (msg.type === "file-start") {
+            requestWakeLock();
+            const ui = createTransferUI(msg.name, msg.size);
+            incomingFile = {
+                name: msg.name,
+                size: msg.size,
+                mime: msg.mime || "application/octet-stream",
+                chunks: [],
+                received: 0,
+                started: performance.now(),
+                ui: ui
+            };
+            log(`Receiving file "${msg.name}" (${formatBytes(msg.size)})...`);
+            return;
+        }
+
+        if (msg.type === "file-end") {
+            finishIncomingFile();
+            releaseWakeLock();
+            return;
+        }
+    }
+
+    function receiveChunk(data) {
+        if (!incomingFile) return;
+
+        const byteLength = data.byteLength || data.size || 0;
+        incomingFile.chunks.push(data);
+        incomingFile.received += byteLength;
+
+        const now = performance.now();
+        const elapsed = (now - incomingFile.started) / 1000;
+        const currentSpeed = elapsed > 0 ? incomingFile.received / elapsed : 0;
+        const percent = incomingFile.size === 0 ? 100 : (incomingFile.received / incomingFile.size) * 100;
+
+        updateTransfer(incomingFile.ui, percent, incomingFile.received, incomingFile.size, currentSpeed);
+    }
+
+    function finishIncomingFile() {
+        if (!incomingFile) return;
+
+        if (incomingFile.received !== incomingFile.size) {
+            log(`Error: File transfer incomplete. Expected ${incomingFile.size} bytes, got ${incomingFile.received}.`);
+            incomingFile = null;
+            return;
+        }
+
+        const blob = new Blob(incomingFile.chunks, { type: incomingFile.mime });
+        const url = URL.createObjectURL(blob);
+        const name = incomingFile.name;
+
+        // Auto-download trigger
+        try {
+            const autoLink = document.createElement("a");
+            autoLink.href = url;
+            autoLink.download = name;
+            autoLink.style.display = "none";
+            document.body.appendChild(autoLink);
+            autoLink.click();
+            document.body.removeChild(autoLink);
+        } catch (_) {}
+
+        // Download actions for user & mobile
+        const downloadLink = document.createElement("a");
+        downloadLink.className = "downloadLink";
+        downloadLink.href = url;
+        downloadLink.download = name;
+        downloadLink.rel = "noopener";
+        downloadLink.textContent = "⬇ Download File";
+
+        const openLink = document.createElement("a");
+        openLink.className = "openLink";
+        openLink.href = url;
+        openLink.target = "_blank";
+        openLink.rel = "noopener";
+        openLink.textContent = "↗ Open / View File";
+
+        const downloadArea = document.createElement("div");
+        downloadArea.className = "downloadArea";
+        downloadArea.appendChild(downloadLink);
+        downloadArea.appendChild(openLink);
+
+        const info = document.createElement("div");
+        info.className = "info";
+        info.textContent = "Saved to Downloads. Tap 'Open / View File' to preview or share to other apps.";
+        downloadArea.appendChild(info);
+
+        incomingFile.ui.appendChild(downloadArea);
+        updateTransfer(incomingFile.ui, 100, incomingFile.size, incomingFile.size, 0, true);
+
+        log(`File received successfully: "${name}".`);
+
+        // Free blob memory after 30 minutes
+        setTimeout(() => {
+            try { URL.revokeObjectURL(url); } catch (_) {}
+        }, 30 * 60 * 1000);
+
+        incomingFile = null;
+    }
+
+    /* ==========================================================
+       ROOM ACTIONS & EVENT LISTENERS
+    ========================================================== */
+    createButton.onclick = async function () {
+        if (socket) return;
+        room = createRoomKey();
+        isCreator = true;
+        openApp();
+        log("Created room: " + room);
+        await connectToSignaling();
+    };
+
+    joinButton.onclick = async function () {
+        if (joinInputArea && joinInputArea.style.display === "none") {
+            joinInputArea.style.display = "block";
+            createButton.style.display = "none";
+            roomInput.focus();
+            return;
+        }
+
+        if (socket) return;
+        room = cleanRoom(roomInput.value);
+
+        if (!room) {
+            alert("Please enter a valid room key.");
+            return;
+        }
+
+        isCreator = false;
+        openApp();
+        log("Joining room: " + room);
+        await connectToSignaling();
+    };
+
+    copyButton.onclick = async function () {
+        try {
+            await navigator.clipboard.writeText(room);
+            copyButton.textContent = "Copied!";
+            setTimeout(() => { copyButton.textContent = "Copy Key"; }, 1500);
+        } catch {
+            prompt("Copy this room key:", room);
+        }
+    };
+
+    if (copyLinkButton) {
+        copyLinkButton.onclick = async function () {
+            const shareUrl = getRoomShareUrl();
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                copyLinkButton.textContent = "Link Copied!";
+                setTimeout(() => { copyLinkButton.textContent = "Copy Link"; }, 1500);
+            } catch {
+                prompt("Copy this direct join link:", shareUrl);
+            }
+        };
+    }
+
+    if (qrButton) {
+        qrButton.onclick = function () {
+            if (!qrCard) return;
+            const isHidden = qrCard.classList.contains("hidden");
+            if (isHidden) {
+                qrCard.classList.remove("hidden");
+                qrButton.textContent = "Hide QR";
+            } else {
+                qrCard.classList.add("hidden");
+                qrButton.textContent = "QR Code";
+            }
+        };
+    }
+
+    fileInput.onchange = function (event) {
+        if (!getActiveTransport()) {
+            alert("Please wait until the other device connects to the room.");
+            return;
+        }
+        const files = [...event.target.files];
+        if (files.length > 0) {
+            sendFiles(files);
+        }
+        fileInput.value = "";
+    };
+
+    dropZone.ondragover = function (event) {
+        event.preventDefault();
+        if (!getActiveTransport()) return;
+        dropZone.classList.add("drag");
+    };
+
+    dropZone.ondragleave = function () {
+        dropZone.classList.remove("drag");
+    };
+
+    dropZone.ondrop = function (event) {
+        event.preventDefault();
+        dropZone.classList.remove("drag");
+        if (!getActiveTransport()) {
+            alert("Please wait until the other device connects to the room.");
+            return;
+        }
+        const files = [...event.dataTransfer.files];
+        if (files.length > 0) {
+            sendFiles(files);
+        }
+    };
+
+    leaveButton.onclick = function () {
+        leaving = true;
+        clearInterval(heartbeatTimer);
+        clearTimeout(p2pNegotiationTimer);
+        releaseWakeLock();
+
+        try { if (dataChannel) dataChannel.close(); } catch (_) {}
+        try { if (peer) peer.close(); } catch (_) {}
+        try { if (socket) socket.close(); } catch (_) {}
+
+        dataChannel = null;
+        peer = null;
+        socket = null;
+        peerJoined = false;
+        webrtcConnected = false;
+        activeTransport = null;
+        offerSent = false;
+        receivedOffer = false;
+        pendingCandidates = [];
+        incomingFile = null;
+        outgoingQueue = [];
+        room = "";
+        isCreator = false;
+
+        transfers.innerHTML = "";
+        logs.textContent = "";
+        roomInput.value = "";
+
+        disableFileSharing();
+        openJoin();
+        setStatus("Disconnected", "waiting");
+        leaving = false;
+    };
+
+    roomInput.onkeydown = function (event) {
+        if (event.key === "Enter") {
+            joinButton.click();
+        }
+    };
+
+    /* ==========================================================
+       AUTO-JOIN FROM URL (?room=XXXXXX)
+    ========================================================== */
+    window.addEventListener("DOMContentLoaded", async () => {
+        const params = new URLSearchParams(window.location.search);
+        const existingRoom = cleanRoom(params.get("room") || params.get("key") || "");
+        if (existingRoom) {
+            roomInput.value = existingRoom;
+            room = existingRoom;
+            isCreator = false;
+            openApp();
+            log("Auto-joining room from link: " + room);
+            await connectToSignaling();
+        }
+    });
 
 })();
