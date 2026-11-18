@@ -617,6 +617,70 @@ button{
     line-height:1.5;
 }
 
+.roomActions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+}
+
+.transportBadge{
+    margin-left:auto;
+    font-size:11px;
+    font-weight:700;
+    padding:4px 10px;
+    border-radius:20px;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    background:rgba(109,93,252,.15);
+    border:1px solid rgba(109,93,252,.35);
+    color:#c4b5fd;
+    white-space:nowrap;
+    transition:.2s ease;
+}
+
+.transportBadge.p2p{
+    background:rgba(34,197,94,.15);
+    border-color:rgba(34,197,94,.4);
+    color:#86efac;
+}
+
+.transportBadge.relay{
+    background:rgba(59,130,246,.15);
+    border-color:rgba(59,130,246,.4);
+    color:#93c5fd;
+}
+
+.qrCard{
+    margin-bottom:17px;
+    padding:16px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:16px;
+    text-align:center;
+    animation:fadeIn .2s ease;
+}
+
+@keyframes fadeIn{
+    from{ opacity:0; transform:translateY(-6px); }
+    to{ opacity:1; transform:translateY(0); }
+}
+
+.qrImg{
+    display:block;
+    margin:0 auto 10px;
+    border-radius:12px;
+    background:white;
+    padding:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+
+.qrHint{
+    font-size:12px;
+    color:var(--muted);
+}
+
 @media(max-width:650px){
 
     body{
@@ -641,8 +705,23 @@ button{
         align-items:stretch;
     }
 
+    .roomActions{
+        width:100%;
+        display:grid;
+        grid-template-columns:1fr 1fr;
+    }
+
     .copy{
         width:100%;
+    }
+
+    .transportBadge{
+        margin-left:0;
+        margin-top:6px;
+    }
+
+    .status{
+        flex-wrap:wrap;
     }
 
     .downloadArea{
