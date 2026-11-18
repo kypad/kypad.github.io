@@ -67,10 +67,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // P2P File Transfer navigation
+    // File Transfer navigation
     if (transferBtn) {
         transferBtn.addEventListener("click", () => {
-            alert("NOTE: Please make sure both devices are connected to the same network for direct peer-to-peer file transfer.");
             window.location.href = "transfer.html";
         });
     }
@@ -86,6 +85,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Global fallback for inline onclick="startFileTransfer()"
 window.startFileTransfer = function () {
-    alert("NOTE: Please make sure both devices are connected to the same network for direct peer-to-peer file transfer.");
     window.location.href = "transfer.html";
 };
